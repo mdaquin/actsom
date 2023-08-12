@@ -1,0 +1,17 @@
+{
+    "act_files": ["painters/painter_act"],
+    "con_files": ["painters/painters_c"],
+    "tar_files": ["painters/painters_y"],
+    "layers": ["embedding", "lstm", "hidden", "relu"],
+    "som_dim": [15,15],
+    "bsom_files": ["painters/soms/base_embedding.pickle",
+		 "painters/soms/base_lstm.pickle",
+		 "painters/soms/base_hidden.pickle",
+		 "painters/soms/base_relu.pickle"		 
+    ],
+    "aggregations": ["mean", "mean", "", ""],
+    "concept_att": ["nationality", "movement", "category"],
+    "concept_tresholds": [20,20,30],
+    "concept_ignore": [["unknown"],["unknown"],["unknown"]],
+    "outdir": "painters/soms/"
+}

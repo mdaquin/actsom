@@ -1,0 +1,23 @@
+{
+    "act_files": ["agenet/agenet_act_1", "agenet/agenet_act_2", "agenet/agenet_act_3", "agenet/agenet_act_4", "agenet/agenet_act_5"],
+    "con_files": ["agenet/agenet_c_1", "agenet/agenet_c_2", "agenet/agenet_c_3", "agenet/agenet_c_4", "agenet/agenet_c_5"],
+    "tar_files_b": ["agenet/agenet_y_d"],
+    "tar_files": [],    
+    "layers": ["net.layer1","net.layer2","net.layer3","net.layer4","net.avgpool","net.fc","linear","relu"],
+    "som_dim": [15,15],
+    "bsom_files":[
+	"agenet/soms/base_net.layer1.pickle",
+	"agenet/soms/base_net.layer2.pickle",
+	"agenet/soms/base_net.layer3.pickle",
+	"agenet/soms/base_net.layer4.pickle",
+	"agenet/soms/base_net.avgpool.pickle",
+	"agenet/soms/base_net.fc.pickle",
+	"agenet/soms/base_linear.pickle",
+	"agenet/soms/base_relu.pickle"
+    ],
+    "aggregations": ["flatten", "flatten", "flatten", "flatten", "flatten", "flatten", "flatten", "flatten"],
+    "concept_att": ["gender", "ethnicity"],
+    "concept_tresholds": [20,20],
+    "concept_ignore": [[],[]],
+    "outdir": "agenet/soms/"
+}

@@ -1,0 +1,7 @@
+{
+    "act_files": ["agenet/agenet_act_1", "agenet/agenet_act_2", "agenet/agenet_act_3", "agenet/agenet_act_4"],
+    "som_dim": [15,15],
+    "layers": ["net.layer1", "net.layer2", "net.layer3", "net.layer4", "net.avgpool", "net.fc", "linear", "relu"],
+    "aggregations": ["flatten", "flatten", "flatten", "flatten", "flatten", "flatten", "flatten", "flatten"],
+    "outdir": "agenet/soms/"
+}
