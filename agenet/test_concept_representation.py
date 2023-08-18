@@ -9,11 +9,11 @@ matplotlib.use('TkAgg')
 sys.path.append("../")
 from actsom import ActSom
 
-layers= ["embedding", "lstm", "hidden", "relu"]
+layers=["net.layer1", "net.layer2", "net.layer3", "net.layer4", "net.avgpool", "relu"]
+
 concept_att= [
-    "nationality",
-    "movement",
-    "category"]
+    "gender",
+    "ethnicity"]
 
 for c in concept_att:
     gdf = pd.DataFrame()

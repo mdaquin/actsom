@@ -133,3 +133,33 @@ class ActSom:
         ng1 = (g1 / g1.sum()).flatten()
         ng2 = (g2 / g2.sum()).flatten()
         return cosine_distances([ng1],[ng2]).flatten()[0]
+
+    
+    def precision(self, b):
+        res = np.zeros(self.grid.shape)
+        for i,l in enumerate(self.grid):
+            for j,v in enumerate(l):
+                res[i,j] = 0 if b.grid[i][j]==0 else v/b.grid[i][j]
+        return res
+
+    def recall(self):
+        res = np.zeros(self.grid.shape)
+        for i,l in enumerate(self.grid):
+            for j,v in enumerate(l):
+                res[i,j] = v/self.grid.sum()
+        return res
+
+
+    def fm(self, b):
+        res = np.zeros(self.grid.shape)
+        pr = self.precision(b)
+        re = self.recall()
+        for i,l in enumerate(pr):
+            for j,p in enumerate(l):
+                res[i,j] = 2*((p*re[i,j])/(p+re[i,j])) if p+re[i,j] != 0 else 0
+        return res
+
+    def maxFM(self, s, amap=False):
+        return self.fm(s).max()
+
+    
