@@ -5,6 +5,9 @@ The code to build this and configure the process on the two case studies present
 
 # Overview of the process
 
+![overview of the process](imgs/overview.png "overview of the process").
+
+
  1. `actsom.py` contains the definition of the `ActSom` class which is used to train, populate and assess SOMs
  2. `minisom.py` is a copy of the minisom library, with a small change to avoid heavy computation in debug mode
  3. `create_base_soms.py` is a script that creates SOMs trained and populated on the entire dataset for each layer of the network. It takes as input (command line argument) a config file in JSON including paths to the model and the activation vectors on the dataset.
