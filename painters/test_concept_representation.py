@@ -27,7 +27,8 @@ for c in concept_att:
             v=v[v.rindex("__")+2:]
             if ":" in v: v=v[v.index(":")+1:]
             cvsom = ActSom(f)
-            data["concept"].append(v)
+            if len(v)>=30: v=v[:27]+"..."
+            data["concept"].append(v.replace("_", " "))
             data["distance"].append(cvsom.distance(bsom))
             data["rel. entropy"].append(cvsom.rel_entropy(bsom))
             data["len"].append(cvsom.grid.sum())
@@ -36,4 +37,8 @@ for c in concept_att:
         gdf[l] = df["rel. entropy"]
         
     gdf.sort_values("relu").plot(kind="bar", title=f"{c}")
+    plt.xlabel("")
+    plt.xticks(fontsize=12)
+    plt.xticks(fontsize=12)    
+    plt.subplots_adjust(bottom=0.4)     
     plt.show()

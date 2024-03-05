@@ -11,13 +11,13 @@ from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms
 from torchvision import models
 
-from sklearn.metrics import r2_score,mean_absolute_error
+from sklearn.metrics import r2_score,mean_absolute_error,mean_absolute_percentage_error
 
 dataset_path = "/data/data/ext_datasets/UTKFace/"
 seed = 42
 val_size = 0.2
-batch_size = 256
-n_epochs = 200
+batch_size = 128
+n_epochs = 50
 image_size = (200,200)
 
 random.seed(seed)
@@ -64,19 +64,21 @@ random.shuffle(files)
 valid_dataset=files[:round(val_size*len(files))]
 train_dataset=files[round(val_size*len(files)):]
 train_dataloader = DataLoader(UTKFace(train_dataset, dataset_path), shuffle=True, batch_size=batch_size)
-val_dataloader = DataLoader(UTKFace(valid_dataset, dataset_path), shuffle=False, batch_size=batch_size)
+val_dataloader = DataLoader(UTKFace(valid_dataset, dataset_path), shuffle=False, batch_size=len(valid_dataset))
 
 class FaceNet(nn.Module):
-    def __init__(self):
+    def __init__(self,headsize=None):
         super().__init__()
         self.net = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
         print(self.net)
         self.n_features = self.net.fc.in_features
+        self.headsize = headsize
+        if headsize is None: self.headsize=self.n_features
         self.net.fc = nn.Identity()
         
-        self.linear = nn.Linear(self.n_features,self.n_features)
+        self.linear = nn.Linear(self.n_features, self.headsize)
         self.relu = nn.ReLU()
-        self.out = nn.Linear(self.n_features, 1)
+        self.out = nn.Linear(self.headsize, 1)
         
     def forward(self, x):
         out = self.net(x)
@@ -85,10 +87,10 @@ class FaceNet(nn.Module):
         out = self.out(out)
         return out
 
-model = FaceNet().to(device=device)
+model = FaceNet(headsize=20).to(device=device)
 criterion = nn.L1Loss()
 
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.09)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 minmae = 10
 
@@ -123,10 +125,11 @@ for epoch in range(n_epochs):
             va_pred.extend(age_output.cpu().detach().numpy())
             va_targ.extend(age_label.cpu().detach().numpy())
         va_mae = mean_absolute_error(va_targ,va_pred)
+        va_mape = mean_absolute_percentage_error(va_targ, va_pred)
         va_r2 = r2_score(va_targ,va_pred)
         if va_mae < minmae:
             torch.save(model,f"agenet_{round(va_mae,2)}_{round(va_r2,2)}")            
-    print(f"{epoch} ({round((time.time()-t)*1000)}ms) - loss: {round(float(total_training_loss)/count,2)}, train r2: {round(tr_r2,2)}, mae: {round(va_mae,2)}, r2: {round(va_r2,2)}")
+    print(f"{epoch} ({round((time.time()-t)*1000)}ms) - loss: {round(float(total_training_loss)/count,2)}, train r2: {round(tr_r2,2)}, mae: {round(va_mae,2)}, mape: {round(va_mape, 2)}, r2: {round(va_r2,2)}")
 
 
 
