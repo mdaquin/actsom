@@ -22,3 +22,5 @@ agenet/soms_25x25
 agenet/soms_back
 agenet/soms/*
 agenet/agenet_*
+nohup.out
+
