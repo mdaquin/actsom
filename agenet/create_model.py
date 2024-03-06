@@ -17,7 +17,7 @@ dataset_path = "/data/data/ext_datasets/UTKFace/"
 seed = 42
 val_size = 0.2
 batch_size = 128
-n_epochs = 50
+n_epochs = 200
 image_size = (200,200)
 
 random.seed(seed)
@@ -87,7 +87,7 @@ class FaceNet(nn.Module):
         out = self.out(out)
         return out
 
-model = FaceNet(headsize=20).to(device=device)
+model = FaceNet(headsize=100).to(device=device)
 criterion = nn.L1Loss()
 
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
