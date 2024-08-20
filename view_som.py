@@ -1,22 +1,56 @@
 import sys
 import os
-from actsom import ActSom
+from ksom import SOM
+import torch
+from sklearn.decomposition import PCA
+import pygame
+import time
 
 if len(sys.argv) < 2:
-    print("Provide either:")
-    print("   - a pickle file with a SOM saved, or")
-    print("   - a directory where to fine a set of SOMs and one where the save the images")
+    print("provide a file where a SOM model was saved. Optionally, you can provide a directory where to save the image of the SOM, in which case it won't be displayed")
     sys.exit(-1)
-elif len(sys.argv)==2:
-    asom = ActSom(sys.argv[1])
-    print(asom.grid)
-    print(asom.amap)
-    asom.display()
-elif len(sys.argv)==3:
-    fs = os.listdir(sys.argv[1])
-    for f in fs:
-        infile = sys.argv[1]+f
-        outfile = sys.argv[2]+f[:f.rindex(".")]+".png"
-        print(f)
-        asom = ActSom(infile)
-        asom.display(outfile=outfile)
+
+print("loading", sys.argv[1])
+som = torch.load(sys.argv[1])
+print("MAP of size:", som.somap.shape)
+
+
+pca = PCA(n_components=3)
+rsom = pca.fit_transform(som.somap)
+rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
+
+screen_size=600 # size of screen 
+pygame.init()
+surface = pygame.display.set_mode((screen_size,screen_size))
+
+def display(somap, som_size):
+    for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+    unit = int(screen_size/som_size)
+    for i,cs in enumerate(somap):
+        x = int(i/som_size)
+        y = i%som_size
+        x = x*unit
+        y = y*unit
+        color = (max(min(255, int(cs[0]*255)), 0),
+                 max(min(255, int(cs[1]*255)), 0),
+                 max(min(255, int(cs[2]*255)), 0))
+        pygame.draw.rect(surface,
+                         color,
+                         pygame.Rect(x, y, unit, unit))
+    pygame.display.flip()
+    pygame.display.update()
+
+
+display(rsom, som.xs)
+
+while True:
+     for event in pygame.event.get():
+             if event.type == pygame.QUIT:
+                 pygame.quit()
+                 sys.exit()    
+     time.sleep(0.1)
+     pygame.display.flip()    
+     pygame.display.update()

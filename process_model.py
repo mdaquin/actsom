@@ -3,14 +3,14 @@ import torch
 import sys, os
 import json
 from ksom import SOM
-## NEXT STEPS:: ##
-# Create dataset as csv
-# Run training sets
-# Get activations of each layer... if conv2D, concat matrix of each channel separetly
-# Add to SOM for each layer
+
+##### TODO
+## really need some normalisation...
+## based on mean of first dataset ?
+
 
 def load_model(fn, device="cpu"):
-    return torch.load(fn).to(device)
+    return torch.load(fn, map_location=device)
 
 def set_up_activations(model):
     global activation
@@ -65,8 +65,10 @@ if __name__ == "__main__":
         P = model(IS)
         for layer in activation:
             acts = torch.flatten(activation[layer], start_dim=1)
-            if layer not in SOMs: SOMs[layer] = SOM(som_size[0], som_size[1], acts.shape[1], neighborhood_init=som_size[0], neighborhood_drate=0.001)
+            if layer not in SOMs: SOMs[layer] = SOM(som_size[0], som_size[1], acts.shape[1], neighborhood_init=som_size[0]*2.0, neighborhood_drate=0.00001*som_size[0])
             print("   *** adding to SOM for",layer)
             SOMs[layer].add(acts)
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
+            break
         print("*** done ***")
+        break
