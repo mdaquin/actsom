@@ -51,6 +51,7 @@ if __name__ == "__main__":
     base_som_dir = config["base_som_dir"]
     
     SOMs = {}
+    mm = {}
 
     data_dir = config["dataset_dir"]
     for f in os.listdir(data_dir):
@@ -65,7 +66,13 @@ if __name__ == "__main__":
         P = model(IS)
         for layer in activation:
             acts = torch.flatten(activation[layer], start_dim=1)
-            if layer not in SOMs: SOMs[layer] = SOM(som_size[0], som_size[1], acts.shape[1], neighborhood_init=som_size[0]*2.0, neighborhood_drate=0.00001*som_size[0])
+            if layer not in mm:
+                mm[layer] = {
+                    "min": acts.min(),
+                    "max": acts.max()
+                    }
+            acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
+            if layer not in SOMs: SOMs[layer] = SOM(som_size[0], som_size[1], acts.shape[1], neighborhood_init=som_size[0]*2.0, neighborhood_drate=0.00001*som_size[0], minval=mm[layer]["min"], maxval=mm[layer]["max"])
             print("   *** adding to SOM for",layer)
             SOMs[layer].add(acts)
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")

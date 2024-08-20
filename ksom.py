@@ -97,7 +97,7 @@ See https://github.com/mdaquin/KSOM/blob/main/test_img.py for an example of the 
     def __init__(self, xs, ys, dim,
                  dist=euclidean_distance, zero_init=False, 
                  alpha_init=1e-3, alpha_drate=1e-6,
-                 neighborhood_init=None, neighborhood_fct=nb_gaussian, neighborhood_drate=1e-6):
+                 neighborhood_init=None, neighborhood_fct=nb_gaussian, neighborhood_drate=1e-6, minval=None, maxval=None):
         if type(xs) != int or type(ys) != int or type(dim) != int: raise TypeError("size and dimension of SOM should be int")
         if alpha_init <= alpha_drate: raise ValueError("Decay rate of learning rate (alpha_drate) should be smaller than initial value (alpha_init)")
         if neighborhood_init is None: self.neighborhood_init = min(xs,ys)/2 # start with half the map
@@ -105,6 +105,8 @@ See https://github.com/mdaquin/KSOM/blob/main/test_img.py for an example of the 
         if neighborhood_init <= neighborhood_drate: raise ValueError("Neighborhood radius decay rate should (neighborhood_drate) should be smaller than initial value (neighborhood_init)")
         super(SOM, self).__init__()
         self.somap = torch.randn(xs*ys, dim)
+        if minval is not None and maxval is not None:
+            self.somap = (self.somap - minval) / (maxval - minval)
         if zero_init: self.somap[:,:] = 0
         self.xs = xs
         self.ys = ys
