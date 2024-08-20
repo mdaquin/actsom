@@ -1,8 +1,8 @@
 {
     "model": "agenet/agenet_4.75_0.88",
     "modelclass": "agenet/model.py",
-    "dataset": "agenet/train.csv",
-    "input": [{"type": "list", "col": "image"}],
-    "target": [{"type": "float", "col": "age"}],
-    "concepts": [{"type": "cat", "col": "ethnicity"}, {"type": "cat", "col": "gender"}]
+    "dataset_dir": "agenet/dataset/",
+    "aggregation" : "flatten",
+    "som_size": [10,10],
+    "base_som_dir": "agenet/base_soms/"
 }
