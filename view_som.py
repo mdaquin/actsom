@@ -19,9 +19,12 @@ pca = PCA(n_components=3)
 rsom = pca.fit_transform(som.somap)
 rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
-screen_size=600 # size of screen 
+screen_size=200 # size of screen 
 pygame.init()
 surface = pygame.display.set_mode((screen_size,screen_size))
+lname = sys.argv[1][sys.argv[1].rindex("/")+1:] if "/" in sys.argv[1] else sys.argv[1]
+lname = lname[:lname.rindex(".")] if "." in lname else lname
+pygame.display.set_caption(lname)
 
 def display(somap, som_size):
     for event in pygame.event.get():
