@@ -4,10 +4,13 @@ import sys, os
 import json
 from ksom import SOM
 
-##### TODO
-## really need some normalisation...
-## based on mean of first dataset ?
-
+## TODO
+# normalisation?
+# init based on based on mean+std of first dataset
+# option for neighborhood function
+# option for distance function
+# also compute global SOM
+# also conpute extension SOM
 
 def load_model(fn, device="cpu"):
     return torch.load(fn, map_location=device)
@@ -31,7 +34,6 @@ def set_up_activations(model):
         return llayers
     return rec_reg_hook(model)
     
-
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
@@ -76,6 +78,4 @@ if __name__ == "__main__":
             print("   *** adding to SOM for",layer)
             SOMs[layer].add(acts)
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
-            break
         print("*** done ***")
-        break

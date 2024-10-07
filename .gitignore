@@ -4,7 +4,7 @@
 *__pycache__*
 
 push.sh
-
+pull.sh
 
 painters/actdata
 painters/allpainters.json

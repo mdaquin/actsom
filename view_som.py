@@ -6,6 +6,14 @@ from sklearn.decomposition import PCA
 import pygame
 import time
 
+## TODO:
+# config file to get dataset (and should get the base som)
+# show frequency in dataset in addition to centroid (arg with properly parsed)
+# if an element added, show distances
+# if a concept given, show frequencies + write down measures (Kdiv/??, ...)
+# should have options to show numbers
+# argument to save to image (and --headless)
+
 if len(sys.argv) < 2:
     print("provide a file where a SOM model was saved. Optionally, you can provide a directory where to save the image of the SOM, in which case it won't be displayed")
     sys.exit(-1)
@@ -14,17 +22,16 @@ print("loading", sys.argv[1])
 som = torch.load(sys.argv[1])
 print("MAP of size:", som.somap.shape)
 
-
 pca = PCA(n_components=3)
 rsom = pca.fit_transform(som.somap)
 rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
-screen_size=200 # size of screen 
+screen_size=500 # size of screen 
 pygame.init()
 surface = pygame.display.set_mode((screen_size,screen_size))
 lname = sys.argv[1][sys.argv[1].rindex("/")+1:] if "/" in sys.argv[1] else sys.argv[1]
 lname = lname[:lname.rindex(".")] if "." in lname else lname
-pygame.display.set_caption(lname)
+pygame.display.set_caption("centroids for "+lname)
 
 def display(somap, som_size):
     for event in pygame.event.get():
