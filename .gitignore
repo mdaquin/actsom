@@ -6,12 +6,12 @@
 push.sh
 pull.sh
 
-painters/actdata
-painters/allpainters.json
-painters/painter_act
-painters/painters_c
-painters/painters_y
-painters/soms/*
+*/painters/actdata
+*/painters/allpainters.json
+*/painters/painter_act
+*/painters/painters_c
+*/painters/painters_y
+*/painters/soms/*
 
 agenet/agenet_act_*
 agenet/agenet_c_*
