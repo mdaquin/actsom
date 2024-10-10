@@ -5,21 +5,22 @@ import torch
 from sklearn.decomposition import PCA
 import pygame
 import time
+from argparse import ArgumentParser, FileType
 
-## TODO:
-# config file to get dataset (and should get the base som)
-# show frequency in dataset in addition to centroid (arg with properly parsed)
-# if an element added, show distances
-# if a concept given, show frequencies + write down measures (Kdiv/??, ...)
-# should have options to show numbers
-# argument to save to image (and --headless)
+parser = ArgumentParser(prog="view SOM", description="visualiser for activation maps created through ActSOM")
+parser.add_argument('somfile', type=FileType('rb'))
+# parser.add_argument('-o', '--output', type=argparse.FileType('wb'))) # output image file
+# parser.add_argument('-f', '--freq', action='store_true')
+# parser.add_argument('-n', '--num', action='store_true')
+# parser.add_argument('-hl', '--headless', action='store_true')
+# parser.add_argument('-d', '--dataset')
+# parser.add_argument('-s', '--sample')
+# parser.add_argument('-c', '--concept')
 
-if len(sys.argv) < 2:
-    print("provide a file where a SOM model was saved. Optionally, you can provide a directory where to save the image of the SOM, in which case it won't be displayed")
-    sys.exit(-1)
+args = parser.parse_args()
 
-print("loading", sys.argv[1])
-som = torch.load(sys.argv[1])
+print("loading SOM file")
+som = torch.load(args.somfile)
 print("MAP of size:", som.somap.shape)
 
 pca = PCA(n_components=3)
