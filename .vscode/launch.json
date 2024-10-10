@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "maunch view_som for tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "agenet/base_soms/linear.pt", 
+                "-n"
+            ]
+        }
+    ]
+}

@@ -11,7 +11,8 @@ parser = ArgumentParser(prog="view SOM", description="visualiser for activation 
 parser.add_argument('somfile', type=FileType('rb'))
 # parser.add_argument('-o', '--output', type=argparse.FileType('wb'))) # output image file
 # parser.add_argument('-f', '--freq', action='store_true')
-# parser.add_argument('-n', '--num', action='store_true')
+parser.add_argument('-n', '--num', action='store_true')
+parser.add_argument('-ss', '--screensize', type=int, default=500)
 # parser.add_argument('-hl', '--headless', action='store_true')
 # parser.add_argument('-d', '--dataset')
 # parser.add_argument('-s', '--sample')
@@ -27,14 +28,14 @@ pca = PCA(n_components=3)
 rsom = pca.fit_transform(som.somap)
 rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
-screen_size=500 # size of screen 
+screen_size=args.screensize # size of screen 
 pygame.init()
 surface = pygame.display.set_mode((screen_size,screen_size))
 lname = sys.argv[1][sys.argv[1].rindex("/")+1:] if "/" in sys.argv[1] else sys.argv[1]
 lname = lname[:lname.rindex(".")] if "." in lname else lname
 pygame.display.set_caption("centroids for "+lname)
 
-def display(somap, som_size):
+def display(somap, som_size, num=False):
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -55,7 +56,7 @@ def display(somap, som_size):
     pygame.display.update()
 
 
-display(rsom, som.xs)
+display(rsom, som.xs, num=args.num)
 
 while True:
      for event in pygame.event.get():
