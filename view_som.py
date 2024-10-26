@@ -1,11 +1,13 @@
 import sys
 import os
 from ksom import SOM
+import dataset
 import torch
 from sklearn.decomposition import PCA
 import pygame
 import time
 from argparse import ArgumentParser, FileType
+
 
 parser = ArgumentParser(prog="view SOM", description="visualiser for activation maps created through ActSOM")
 parser.add_argument('somfile', type=FileType('rb'))
@@ -25,7 +27,10 @@ print("MAP of size:", som.somap.shape)
 
 # creating the display map
 if "dataset" in args:
-     # load dataset (see process dataset)
+     dataset = dataset.KSDataset(args.dataset)
+     for sd in dataset:
+         print(sd)
+         break
      # if concept 
      #     create the freq map
      #     or create the diff map
