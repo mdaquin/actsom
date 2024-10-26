@@ -9,12 +9,11 @@ from argparse import ArgumentParser, FileType
 
 parser = ArgumentParser(prog="view SOM", description="visualiser for activation maps created through ActSOM")
 parser.add_argument('somfile', type=FileType('rb'))
-# parser.add_argument('-o', '--output', type=argparse.FileType('wb'))) # output image file
-# parser.add_argument('-f', '--freq', action='store_true')
+parser.add_argument('-o', '--output') # output image file
 parser.add_argument('-n', '--num', action='store_true')
 parser.add_argument('-ss', '--screensize', type=int, default=500)
-# parser.add_argument('-hl', '--headless', action='store_true')
-# parser.add_argument('-d', '--dataset')
+parser.add_argument('-hl', '--headless', action='store_true', default=False)
+parser.add_argument('-d', '--dataset') # show freas if no sample or concept
 # parser.add_argument('-s', '--sample')
 # parser.add_argument('-c', '--concept')
 
@@ -24,19 +23,34 @@ print("loading SOM file")
 som = torch.load(args.somfile)
 print("MAP of size:", som.somap.shape)
 
+# creating the display map
+if "dataset" in args:
+     # load dataset (see process dataset)
+     # if concept 
+     #     create the freq map
+     #     or create the diff map
+     # if element 
+     #     create the distance map
+     # else 
+     #     create rsom with only frequencies...
+     pass 
+# else: 
 pca = PCA(n_components=3)
 rsom = pca.fit_transform(som.somap)
 rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
 screen_size=args.screensize # size of screen 
-pygame.init()
+hl = "headless" in args and args.headless
 surface = pygame.display.set_mode((screen_size,screen_size))
-lname = sys.argv[1][sys.argv[1].rindex("/")+1:] if "/" in sys.argv[1] else sys.argv[1]
-lname = lname[:lname.rindex(".")] if "." in lname else lname
-pygame.display.set_caption("centroids for "+lname)
+if not hl:
+    pygame.init()
+    lname = sys.argv[1][sys.argv[1].rindex("/")+1:] if "/" in sys.argv[1] else sys.argv[1]
+    lname = lname[:lname.rindex(".")] if "." in lname else lname
+    pygame.display.set_caption("centroids for "+lname)
 
-def display(somap, som_size, num=False):
-    for event in pygame.event.get():
+def display(somap, som_size, num=False, hl=False, output=None):
+    if not hl:
+      for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -54,11 +68,16 @@ def display(somap, som_size, num=False):
                          pygame.Rect(x, y, unit, unit))
     pygame.display.flip()
     pygame.display.update()
+    if output:
+        pygame.image.save(surface, output)
+        print("saved to", output)
 
+output = None
+if "output" in args : output = args.output
+display(rsom, som.xs, num=args.num, hl=hl, output=output)
 
-display(rsom, som.xs, num=args.num)
-
-while True:
+if not hl: 
+  while True:
      for event in pygame.event.get():
              if event.type == pygame.QUIT:
                  pygame.quit()

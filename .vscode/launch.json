@@ -1,16 +1,23 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
+        
 
         {
-            "name": "maunch view_som for tests",
+            "name": "launch view_som for tests",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "view_som.py",
             "console": "integratedTerminal",
             "args": [
                 "agenet/base_soms/linear.pt", 
-                "-n"
+                "-n", 
+                "-hl",
+                "-d", 
+                "agenet/dataset/", 
+                "-o", 
+                "test.png"
             ]
         }
     ]
