@@ -103,3 +103,8 @@ for epoch in range(1, EPS+1):
         best_model = copy.deepcopy(model)
         best_epoch = epoch
     print(f'Epoch: {epoch:03d} ({tt:04d}/{te:04d}), Train acc: {train_acc:.4f}, Test acc: {test_acc:.4f} (best: {best_test:.4f})')
+
+print("Best acc on test", float(best_test),"at epoch",best_epoch)
+print(f"Total time {round(ttt/1000):03d}s for training, {round(tte/1000):03d}s for testing")
+print(f"Average time per epoch {round(ttt/EPS):04d}ms for training, {round(tte/EPS):04d}ms for testing")
+torch.save(best_model, "painters/model.pt")
