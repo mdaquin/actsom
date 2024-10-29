@@ -11,11 +11,13 @@ df = pd.read_json("painters/allpainters.json").T
 # print(df.columns)
 df["nbmuseum"] = df.nbmuseum.apply(lambda x: int(x))
 df["inmuseum"] = (df.nbmuseum > 0).apply(lambda x: float(x))
+
 print("*"*6,"balancing","*"*6)
 dfp=df[df.inmuseum==1.0]
 dfn=df[df.inmuseum==0.0].sample(len(dfp), random_state=42)
-df=pd.concat([dfp,dfn])
+df=pd.concat([dfp,dfn]).sample(frac=1)
 df=df.drop("nbmuseum", axis=1)
+
 print("*"*6,"tokenizing","*"*6)
 tokenizer = get_tokenizer('basic_english')
 counter = Counter()
