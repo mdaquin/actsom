@@ -11,6 +11,14 @@ from argparse import ArgumentParser, FileType
 def load_model(fn, device="cpu"):
     return torch.load(fn, map_location=device, weights_only=False)
 
+def getLayer(model, layer):
+    if "." in layer:
+        first = layer[:layer.index(".")]
+        rest  = layer[layer.index(".")+1:]
+        nmod = getattr(model, first)
+        return getLayer(nmod, rest)
+    return getattr(model, layer) # won't work with subsubmodule
+
 parser = ArgumentParser(prog="view SOM", description="visualiser for activation maps created through ActSOM")
 parser.add_argument('somfile')
 parser.add_argument('-o', '--output') # output image file
@@ -42,7 +50,7 @@ if "dataset" in args and args.dataset is not None:
     model=load_model(args.model)
     layer = args.somfile
     if "/" in layer: layer = layer[layer.rindex("/")+1:]
-    if "." in layer: layer = layer[:layer.index(".")]
+    if ".pt" in layer: layer = layer[:layer.rindex(".")]
     print("*** setup hook for layer", layer)
     global activation
     activation = {}
@@ -51,7 +59,7 @@ if "dataset" in args and args.dataset is not None:
             if type(output) != torch.Tensor: activation[name] = output
             else: activation[name] = output.cpu().detach()
         return hook
-    smod = getattr(model, layer) # won't work with subsubmodule
+    smod = getLayer(model, layer)
     smod.register_forward_hook(get_activation(layer))
     print("*** applying model and getting frequencies")
     som.to("cpu")
@@ -62,17 +70,19 @@ if "dataset" in args and args.dataset is not None:
      # if element 
      #     create the distance map
      # else 
+    rsom =  torch.tensor([0 for i in range(som.somap.shape[0])])
     for i in range(len(dataset)):
+        print("   *** file", i)
         IS,OS = dataset[i]
         if IS.to(int).equal(IS): IS = IS.to(int)
+        print("      *** applying SOM")
         PS = model(IS)
         if type(activation[layer]) == tuple: activation[layer] = activation[layer][0]
         acts = torch.flatten(activation[layer], start_dim=1).cpu()
         acts = (acts-som.minval.cpu())/(som.maxval.cpu()-som.minval.cpu())
         res = som(acts)[0]
-        rsom =  torch.tensor([0 for i in range(som.somap.shape[0])])
         for r in res: rsom[r[0]*som.xs+r[1]] +=1 
-        rsom = (rsom-rsom.min())/(rsom.max()-rsom.min())
+    rsom = (rsom-rsom.min())/(rsom.max()-rsom.min())
 else: 
     pca = PCA(n_components=3, random_state=42)
     rsom = pca.fit_transform(som.somap.detach().cpu())
