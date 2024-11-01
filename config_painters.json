@@ -1,0 +1,12 @@
+{
+    "model": "painters/model.pt",
+    "modelclass": "painters/model.py",
+    "dataset_dir": "painters/dataset/",
+    "aggregation" : "flatten",
+    "som_size": [10,10],
+    "base_som_dir": "painters/base_soms/",
+    "inputisint": 1, 
+    "alpha": 1e-2, 
+    "alpha_drate": 1e-6
+
+}

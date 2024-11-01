@@ -5,7 +5,6 @@ import json
 from ksom import SOM
 
 ## TODO
-# normalisation?
 # init based on based on mean+std of first dataset
 # option for neighborhood function
 # option for distance function
@@ -13,7 +12,7 @@ from ksom import SOM
 # also conpute extension SOM
 
 def load_model(fn, device="cpu"):
-    return torch.load(fn, map_location=device)
+    return torch.load(fn, map_location=device, weights_only=False)
 
 def set_up_activations(model):
     global activation
@@ -37,13 +36,15 @@ def set_up_activations(model):
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-        print("provide configuration file (JSON)")
-        sys.exit(-1)
-
+        conf = "config_painters.json"
+        #print("provide configuration file (JSON)")
+        #sys.exit(-1)
+    else: conf = sys.argv[1]
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device == torch.device("cuda"): print("USING GPU")
         
-    config = json.load(open(sys.argv[1]))
+    config = json.load(open(conf))
     exec(open(config["modelclass"]).read())
     model = load_model(config["model"], device=device)
     activation = {}
@@ -60,22 +61,37 @@ if __name__ == "__main__":
         print("*** loading", f, "***")
         data = json.load(open(data_dir+"/"+f))
         IS = []
-        for d in data:
-            IS.append(d["I"])
-        IS = torch.Tensor(IS).to(device)
+        for d in data: IS.append(d["I"])
+        IS = torch.Tensor(IS)
+        if "inputisint" in config and config["inputisint"] == 1: IS = IS.to(torch.int)
+        IS = IS.to(device)
         print("*** applying model ***")
         activation = {}
         P = model(IS)
         for layer in activation:
-            acts = torch.flatten(activation[layer], start_dim=1)
+            # in case of LSTM, it is a tuple
+            # output is the first element
+            if type(activation[layer]) == tuple: activation[layer] = activation[layer][0]
+            acts = torch.flatten(activation[layer], start_dim=1).to(device)
             if layer not in mm:
                 mm[layer] = {
-                    "min": acts.min(),
-                    "max": acts.max()
+                    "min": acts.min(dim=0).values.to(device),
+                    "max": acts.max(dim=0).values.to(device)
                     }
             acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
-            if layer not in SOMs: SOMs[layer] = SOM(som_size[0], som_size[1], acts.shape[1], neighborhood_init=som_size[0]*2.0, neighborhood_drate=0.00001*som_size[0], minval=mm[layer]["min"], maxval=mm[layer]["max"])
+            if layer not in SOMs: 
+                print("      *** creating", layer)
+                SOMs[layer] = SOM(som_size[0], 
+                                  som_size[1], 
+                                  acts.shape[1], 
+                                  neighborhood_init=som_size[0]*2.0, 
+                                  neighborhood_drate=0.00001*som_size[0], 
+                                  minval=mm[layer]["min"], 
+                                  maxval=mm[layer]["max"], 
+                                  device=device, 
+                                  alpha_init=config["alpha"], 
+                                  alpha_drate=config["alpha_drate"])
             print("   *** adding to SOM for",layer)
-            SOMs[layer].add(acts)
+            SOMs[layer].add(acts.to(device))
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
         print("*** done ***")

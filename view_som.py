@@ -26,23 +26,24 @@ som = torch.load(args.somfile)
 print("MAP of size:", som.somap.shape)
 
 # creating the display map
-if "dataset" in args:
+if "dataset" in args and args.dataset is not None:
+     print("*** loading dataset")
      dataset = dataset.KSDataset(args.dataset)
-     for sd in dataset:
-         print(sd)
-         break
      # if concept 
      #     create the freq map
      #     or create the diff map
      # if element 
      #     create the distance map
      # else 
-     #     create rsom with only frequencies...
-     pass 
-# else: 
-pca = PCA(n_components=3)
-rsom = pca.fit_transform(som.somap)
-rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
+     print(som)
+     for i in range(len(dataset)):
+         # needs the model and the layer name...
+         # + needs the mins and max...
+         pass 
+else: 
+    pca = PCA(n_components=3, random_state=42)
+    rsom = pca.fit_transform(som.somap.detach().cpu())
+    rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
 screen_size=args.screensize # size of screen 
 hl = "headless" in args and args.headless
