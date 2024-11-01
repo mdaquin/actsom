@@ -2,7 +2,7 @@ import pandas as panda
 import torch
 import sys, os
 import json
-from ksom import SOM
+from ksom import SOM, nb_gaussian, nb_linear, nb_ricker
 
 ## TODO
 # init based on based on mean+std of first dataset
@@ -20,7 +20,9 @@ def set_up_activations(model):
     def get_activation(name):
         def hook(model, input, output):
             if type(output) != torch.Tensor: activation[name] = output
-            else: activation[name] = output.cpu().detach()
+            else: 
+                activation[name] = output.cpu().detach()
+                # print(name, activation[name].shape)
         return hook
     def rec_reg_hook(mo, prev="", lev=0):
         for k in mo.__dict__["_modules"]:
@@ -89,7 +91,8 @@ if __name__ == "__main__":
                                   minval=mm[layer]["min"], 
                                   maxval=mm[layer]["max"], 
                                   device=device, 
-                                  alpha_init=config["alpha"], 
+                                  alpha_init=config["alpha"],
+                                  neighborhood_fct=nb_linear, 
                                   alpha_drate=config["alpha_drate"])
             print("   *** adding to SOM for",layer)
             SOMs[layer].add(acts.to(device))

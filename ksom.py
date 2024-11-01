@@ -108,6 +108,8 @@ See https://github.com/mdaquin/KSOM/blob/main/test_img.py for an example of the 
         self.somap = torch.randn(xs*ys, dim).to(device)
         #if minval is not None and maxval is not None:
         #    self.somap = (self.somap - minval) / (maxval - minval)
+        self.minval = minval
+        self.maxval = maxval
         if zero_init: self.somap[:,:] = 0
         self.xs = xs
         self.ys = ys

@@ -9,15 +9,16 @@ class KSDataset :
     def __init__(self, data_dirname):
         self.dirname = data_dirname
         self.flist = os.listdir(self.dirname)
-        self.data = []
-        for f in self.flist: 
-            self.data += json.load(open(self.dirname+"/"+f))
     
-    def __len__(self): return len(self.data)
+    def __len__(self): return len(self.flist)
 
     def __getitem__(self, i): 
-        data = self.data[i]
-        IS = torch.Tensor(data["I"])
-        OS = data["O"]
+        data = json.load(open(self.dirname+"/"+self.flist[i]))
+        IS, OS = [],[]
+        for item in data:
+            IS.append(item["I"])
+            OS.append(item["O"])
+        IS = torch.Tensor(IS)
+        OS = torch.Tensor(OS)
         # CS = torch.Tensor(CS) // TODO: will have to deal with this at some point
         return IS, OS
