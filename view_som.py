@@ -84,8 +84,10 @@ if "dataset" in args and args.dataset is not None:
         for r in res: rsom[r[0]*som.xs+r[1]] +=1 
     rsom = rsom/rsom.sum()
 else: 
+    somap = som.somap.detach().cpu()
+    somap = torch.nan_to_num(somap, 0)
     pca = PCA(n_components=3, random_state=42)
-    rsom = pca.fit_transform(som.somap.detach().cpu())
+    rsom = pca.fit_transform(somap)
     rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 
 screen_size=args.screensize # size of screen 
