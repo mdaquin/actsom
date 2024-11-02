@@ -82,7 +82,7 @@ if "dataset" in args and args.dataset is not None:
         acts = (acts-som.minval.cpu())/(som.maxval.cpu()-som.minval.cpu())
         res = som(acts)[0]
         for r in res: rsom[r[0]*som.xs+r[1]] +=1 
-    rsom = (rsom-rsom.min())/(rsom.max()-rsom.min())
+    rsom = rsom/rsom.sum()
 else: 
     pca = PCA(n_components=3, random_state=42)
     rsom = pca.fit_transform(som.somap.detach().cpu())
@@ -112,9 +112,10 @@ def display(somap, som_size, num=False, hl=False, output=None):
         x = x*unit
         y = y*unit
         if len(cs.shape)==0: # freqs
-            color = (max(min(255, int(cs*255)), 0),
-                     max(min(255, int(cs*255)), 0),
-                     max(min(255, int(cs*255)), 0))
+            ncs = (cs-somap.min())/(somap.max()-somap.min())
+            color = (max(min(255, int(ncs*255)), 0),
+                     max(min(255, int(ncs*255)), 0),
+                     max(min(255, int(ncs*255)), 0))
         else:
             color = (max(min(255, int(cs[0]*255)), 0),
                      max(min(255, int(cs[1]*255)), 0),
@@ -123,9 +124,10 @@ def display(somap, som_size, num=False, hl=False, output=None):
                          color,
                          pygame.Rect(x, y, unit, unit))
         if num and len(cs.shape)==0:
-            if cs>0.5: tc = (50, 50, 50)
+            ncs = (cs-somap.min())/(somap.max()-somap.min())
+            if ncs>0.5: tc = (50, 50, 50)
             else: tc = (200, 200, 200)
-            texts = font.render(f"{float(cs):.3f}", False, tc)
+            texts = font.render(f"{float(cs)*100:02.2f}%", False, tc)
             surface.blit(texts, (x+font.size("0")[0]*2,y+font.size("0")[0]*4))
 
     pygame.display.flip()

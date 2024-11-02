@@ -3,7 +3,7 @@
     "modelclass": "agenet/model.py",
     "dataset_dir": "agenet/dataset/",
     "aggregation" : "flatten",
-    "som_size": [10,10],
+    "som_size": [5,5],
     "base_som_dir": "agenet/base_soms/", 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6
