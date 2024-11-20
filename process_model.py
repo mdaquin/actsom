@@ -2,7 +2,7 @@ import pandas as panda
 import torch
 import sys, os
 import json
-from ksom import SOM, nb_gaussian, nb_linear, nb_ricker
+from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 
 # TODO figure out the NaNs in SOMs
 
@@ -80,7 +80,14 @@ if __name__ == "__main__":
             # in case of LSTM, it is a tuple
             # output is the first element
             if type(activation[layer]) == tuple: activation[layer] = activation[layer][0]
-            acts = torch.flatten(activation[layer], start_dim=1).to(device)
+            if config["aggregation"] == "flatten": acts = torch.flatten(activation[layer], start_dim=1).to(device)
+            elif config["aggregation"] == "mean":
+                if len(activation[layer].shape) > 2:
+                    acts = torch.mean(activation[layer], dim=1).to(device)
+                else: acts = activation[layer].to(device)
+            else: 
+                print("unknown aggregation, check config")
+                sys.exit(-1)
             if layer not in mm:
                 mm[layer] = {
                     "min": acts.min(dim=0).values.to(device),
@@ -93,6 +100,7 @@ if __name__ == "__main__":
                 SOMs[layer] = SOM(som_size[0], 
                                   som_size[1], 
                                   acts.shape[1], 
+                                  dist=cosine_distance,
                                   neighborhood_init=som_size[0]*2.0, 
                                   neighborhood_drate=0.00001*som_size[0], 
                                   zero_init=True,
@@ -103,7 +111,8 @@ if __name__ == "__main__":
                                   neighborhood_fct=nb_linear, 
                                   alpha_drate=config["alpha_drate"])
             print("   *** adding to SOM for",layer)
-            SOMs[layer].add(acts.to(device))
+            change,count = SOMs[layer].add(acts.to(device))
+            print(f"      {count}/{len(acts)} elements resulted in a change of {change}")
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
             # NaNs happen quickly, from first relu layer.
             # this is a trick... should be investigated why we get NaNs in the SOM

@@ -1,6 +1,6 @@
 import sys
 import os
-from ksom import SOM
+from ksom import SOM, euclidean_distance
 import dataset
 import torch
 from sklearn.decomposition import PCA
@@ -28,6 +28,7 @@ parser.add_argument('-hl', '--headless', action='store_true', default=False)
 parser.add_argument('-d', '--dataset') # show freas if no sample or concept
 parser.add_argument('-m', '--model') # show freas if no sample or concept
 parser.add_argument('-mc', '--modelcode') # show freas if no sample or concept
+parser.add_argument('-a', '--aggregation', default="flatten") # show freas if no sample or concept
 # parser.add_argument('-s', '--sample')
 # parser.add_argument('-c', '--concept')
 
@@ -62,6 +63,7 @@ if "dataset" in args and args.dataset is not None:
     smod = getLayer(model, layer)
     smod.register_forward_hook(get_activation(layer))
     print("*** applying model and getting frequencies")
+    som.dist = euclidean_distance # BUG: to remove the problem with cosine...
     som.to("cpu")
     dataset = dataset.KSDataset(args.dataset)
      # if concept 
@@ -78,7 +80,16 @@ if "dataset" in args and args.dataset is not None:
         print("      *** applying SOM")
         PS = model(IS)
         if type(activation[layer]) == tuple: activation[layer] = activation[layer][0]
-        acts = torch.flatten(activation[layer], start_dim=1).cpu()
+        if args.aggregation == "flatten":
+            acts = torch.flatten(activation[layer], start_dim=1).cpu()
+        elif args.aggregation == "mean":
+                if len(activation[layer].shape) > 2:
+                    acts = torch.mean(activation[layer], dim=1).cpu()
+                else: 
+                    acts = activation[layer].cpu()
+        else:
+            print("unknown aggregation")
+            sys.exit(-1)
         acts = (acts-som.minval.cpu())/(som.maxval.cpu()-som.minval.cpu())
         res = som(acts)[0]
         for r in res: rsom[r[0]*som.xs+r[1]] +=1 
