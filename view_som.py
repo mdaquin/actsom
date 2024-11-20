@@ -85,10 +85,22 @@ if "dataset" in args and args.dataset is not None:
     rsom = rsom/rsom.sum()
 else: 
     somap = som.somap.detach().cpu()
-    somap = torch.nan_to_num(somap, 0)
+    # somap = torch.nan_to_num(somap, 0.0)
+    if somap.isnan().any(): 
+        print("SOM has nans...")
+        sys.exit(-1)
+    if somap.shape[1] == 1:
+        somap = somap.repeat(3, 3)
     pca = PCA(n_components=3, random_state=42)
     rsom = pca.fit_transform(somap)
-    rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
+    if torch.tensor(rsom).isnan().any(): 
+        print("PCA SOM has nans...")
+        sys.exit(-1)
+    if rsom.min() != rsom.max():
+        rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
+    if torch.tensor(rsom).isnan().any(): 
+        print("Normalised PCA SOM has nans...")
+        sys.exit(-1)
 
 screen_size=args.screensize # size of screen 
 hl = "headless" in args and args.headless

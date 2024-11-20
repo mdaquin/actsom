@@ -25,5 +25,5 @@ agenet/base_soms/*
 agenet/dataset/*
 agenet/deprecated/*
 nohup.out
-*/out*.txt
+*out*.txt
 

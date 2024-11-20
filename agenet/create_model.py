@@ -28,7 +28,10 @@ if device == torch.device("cuda"): print("USING GPU")
 
 class UTKFace(Dataset):
     def __init__(self, image_paths, dataset_path):
-        self.transform = transforms.Compose([transforms.Resize(image_size), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        self.transform = transforms.Compose([transforms.Resize(image_size), 
+                                             transforms.ToTensor(), 
+                                             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                                             ])
         self.image_paths = image_paths
         self.dataset_path = dataset_path
         self.images = []

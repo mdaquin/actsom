@@ -4,12 +4,7 @@ import sys, os
 import json
 from ksom import SOM, nb_gaussian, nb_linear, nb_ricker
 
-## TODO
-# init based on based on mean+std of first dataset
-# option for neighborhood function
-# option for distance function
-# also compute global SOM
-# also conpute extension SOM
+# TODO figure out the NaNs in SOMs
 
 def load_model(fn, device="cpu"):
     return torch.load(fn, map_location=device, weights_only=False)
@@ -63,13 +58,24 @@ if __name__ == "__main__":
         print("*** loading", f, "***")
         data = json.load(open(data_dir+"/"+f))
         IS = []
-        for d in data: IS.append(d["I"])
+        OS = []
+        for d in data: 
+            IS.append(d["I"])
+            OS.append(d["O"])
         IS = torch.Tensor(IS)
+        OS = torch.Tensor(OS)
         if "inputisint" in config and config["inputisint"] == 1: IS = IS.to(torch.int)
         IS = IS.to(device)
+        OS = OS.to(device)
         print("*** applying model ***")
         activation = {}
         P = model(IS)
+        if config["eval"] == "precision":
+            prec = 1-(abs(OS - (P>=0.5).to(torch.int).T[0]).sum()/len(P))
+            print(f" Precision: {prec*100:.02f}%")
+        elif config["eval"] == "mae":
+            err = abs(OS - P.T[0]).sum()/len(P) 
+            print(f" Average error: {err:.02f}")
         for layer in activation:
             # in case of LSTM, it is a tuple
             # output is the first element
@@ -80,6 +86,7 @@ if __name__ == "__main__":
                     "min": acts.min(dim=0).values.to(device),
                     "max": acts.max(dim=0).values.to(device)
                     }
+            # normalisation based on min/max of first dataset
             acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
             if layer not in SOMs: 
                 print("      *** creating", layer)
@@ -88,6 +95,7 @@ if __name__ == "__main__":
                                   acts.shape[1], 
                                   neighborhood_init=som_size[0]*2.0, 
                                   neighborhood_drate=0.00001*som_size[0], 
+                                  zero_init=True,
                                   minval=mm[layer]["min"], 
                                   maxval=mm[layer]["max"], 
                                   device=device, 
@@ -97,4 +105,9 @@ if __name__ == "__main__":
             print("   *** adding to SOM for",layer)
             SOMs[layer].add(acts.to(device))
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
+            # NaNs happen quickly, from first relu layer.
+            # this is a trick... should be investigated why we get NaNs in the SOM
+            if torch.isnan(SOMs[layer].somap).any(): 
+                print ("*** NaN!")
+                SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
         print("*** done ***")

@@ -58,6 +58,7 @@ def test(model, loader, show=False, clear=False):
      for x,y in loader:  # Iterate in batches over the training/test dataset.
          out = model(x)
          out = (out>=0.5).to(torch.float32)
+         # out = out.round()
          err += (out.T[0]-y).abs().sum()
          count += len(y)
      return 1-(err/count)
@@ -109,3 +110,4 @@ print("Best acc on test", float(best_test),"at epoch",best_epoch)
 print(f"Total time {round(ttt/1000):03d}s for training, {round(tte/1000):03d}s for testing")
 print(f"Average time per epoch {round(ttt/EPS):04d}ms for training, {round(tte/EPS):04d}ms for testing")
 torch.save(best_model, "painters/model.pt")
+print("saved model")
