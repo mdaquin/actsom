@@ -97,13 +97,16 @@ if __name__ == "__main__":
             acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
             if layer not in SOMs: 
                 print("      *** creating", layer)
+                perm = torch.randperm(acts.size(0))
+                samples = acts[perm[-(som_size[0]*som_size[1]):]]
                 SOMs[layer] = SOM(som_size[0], 
                                   som_size[1], 
                                   acts.shape[1], 
                                   dist=cosine_distance,
-                                  neighborhood_init=som_size[0]*2.0, 
+                                  neighborhood_init=som_size[0]*1.0, 
                                   neighborhood_drate=0.00001*som_size[0], 
                                   zero_init=True,
+                                  sample_init=samples,
                                   minval=mm[layer]["min"], 
                                   maxval=mm[layer]["max"], 
                                   device=device, 

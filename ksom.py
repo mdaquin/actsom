@@ -11,7 +11,7 @@ def euclidean_distance(x,y):
     the tensor x and the ones of the tensor y"""
     return torch.cdist(x,y,2)
 
-# BUG: does not work for batch! Should check that euclidiant distance does work for batch...
+# BUG : does not work in batch !!! 
 def cosine_distance(x,y):
     """returns a distance matrix between the elements of 
     the tensor x and the ones of the tensor y"""
@@ -105,7 +105,7 @@ See https://github.com/mdaquin/KSOM/blob/main/test_img.py for an example of the 
     """
     
     def __init__(self, xs, ys, dim,
-                 dist=euclidean_distance, zero_init=False, 
+                 dist=euclidean_distance, zero_init=False, sample_init=None,
                  alpha_init=1e-2, alpha_drate=1e-6,
                  neighborhood_init=None, neighborhood_fct=nb_gaussian, neighborhood_drate=1e-6, 
                  minval=None, maxval=None, device="cpu"):
@@ -121,6 +121,9 @@ See https://github.com/mdaquin/KSOM/blob/main/test_img.py for an example of the 
         self.minval = minval
         self.maxval = maxval
         if zero_init: self.somap = torch.zeros((xs*ys, dim), dtype=torch.float).to(device)
+        if sample_init is not None: 
+            if sample_init.shape == self.somap.shape: self.somap = sample_init
+            else: raise ValueError("Number of samples provided for initialisation should be the same as number of cells in map;")
         self.xs = xs
         self.ys = ys
         self.dim = dim
