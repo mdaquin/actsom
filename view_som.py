@@ -1,6 +1,6 @@
 import sys
 import os
-from ksom import SOM, euclidean_distance
+from ksom import SOM
 import dataset
 import torch
 from sklearn.decomposition import PCA
@@ -63,7 +63,6 @@ if "dataset" in args and args.dataset is not None:
     smod = getLayer(model, layer)
     smod.register_forward_hook(get_activation(layer))
     print("*** applying model and getting frequencies")
-    som.dist = euclidean_distance # BUG: to remove the problem with cosine...
     som.to("cpu")
     dataset = dataset.KSDataset(args.dataset)
      # if concept 
