@@ -1,7 +1,7 @@
 import sys
 import os
 from ksom import SOM
-import dataset
+import utils
 import torch
 from sklearn.decomposition import PCA
 import pygame
@@ -64,7 +64,7 @@ if "dataset" in args and args.dataset is not None:
     smod.register_forward_hook(get_activation(layer))
     print("*** applying model and getting frequencies")
     som.to("cpu")
-    dataset = dataset.KSDataset(args.dataset)
+    dataset = utils.KSDataset(args.dataset)
      # if concept 
      #     create the freq map
      #     or create the diff map
