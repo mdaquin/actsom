@@ -25,6 +25,20 @@ for i in vc.index:
     fmap[i//fmap.shape[0], i%fmap.shape[0]] = vc[i]
 fmap = fmap/fmap.sum()
 
+cmap = None
+if "concept" in args and args.concept is not None: 
+    column = args.concept.split(":")[0]
+    value = args.concept.split(":")[1]
+    print(f"looking at {column} with value {value}")
+    if type(df[column].iloc[0]) == str: 
+        rdf = df[df.apply(lambda x: value in x[column], axis=1)]
+    else: rdf = df[df[column] == float(value)]
+    vc = rdf[args.layer].value_counts()
+    cmap = np.zeros(tuple(config["som_size"]))
+    for i in vc.index: 
+        cmap[i//cmap.shape[0], i%cmap.shape[0]] = vc[i]
+    cmap = cmap/cmap.sum()
+
 screen_size=args.screensize # size of screen 
 hl = "headless" in args and args.headless
 pygame.font.init()
@@ -34,7 +48,7 @@ if not hl:
     pygame.init()
     pygame.display.set_caption("frequencies for "+args.layer)
 
-def display(fmap, som_size, hl=False, output=None):
+def display(fmap, som_size, cmap=None, hl=False, output=None):
     if not hl:
       for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -42,14 +56,16 @@ def display(fmap, som_size, hl=False, output=None):
                 sys.exit()
     unit = int(screen_size/som_size)
     for i,l in enumerate(fmap):
-        for y,cs in enumerate(l):
-            print(i,y)
+        for j,cs in enumerate(l):
             x = i*unit
-            y = y*unit
+            y = j*unit
             ncs = (cs-fmap.min())/(fmap.max()-fmap.min())
-            color = (max(min(255, int(ncs*255)), 0),
-                     max(min(255, int(ncs*255)), 0),
-                     max(min(255, int(ncs*255)), 0))
+            gb = max(min(255, int(ncs*255)), 0)
+            r = max(min(255, int(ncs*255)), 0)
+            if cmap is not None:
+                ncs = (cmap[i,j]-cmap.min())/(cmap.max()-cmap.min())
+                r = max(min(255, int(ncs*255)), 0)
+            color = (r,gb,gb)
             pygame.draw.rect(surface,
                          color,
                          pygame.Rect(x, y, unit, unit))
@@ -66,7 +82,7 @@ def display(fmap, som_size, hl=False, output=None):
 
 output = None
 if "output" in args : output = args.output
-display(fmap, fmap.shape[0], hl=hl, output=output)
+display(fmap, fmap.shape[0], cmap=cmap, hl=hl, output=output)
 
 if not hl: 
   while True:
