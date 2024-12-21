@@ -7,5 +7,6 @@
     "base_som_dir": "agenet/base_soms/", 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6, 
-    "eval": "mae"
+    "eval": "mae",
+    "results_file": "agenet/results.csv"
 }

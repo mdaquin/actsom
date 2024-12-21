@@ -10,5 +10,4 @@
     "alpha_drate": 1e-6,
     "eval": "precision", 
     "results_file": "painters/results.csv"
-
 }
