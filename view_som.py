@@ -8,6 +8,8 @@ import pygame
 import time
 from argparse import ArgumentParser, FileType
 
+# TODO: remove freq maps from here and create a specific script for it.
+
 def load_model(fn, device="cpu"):
     return torch.load(fn, map_location=device, weights_only=False)
 

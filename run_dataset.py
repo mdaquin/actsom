@@ -31,7 +31,7 @@ for som in soms:
     smod = u.getLayer(model, layer)
     smod.register_forward_hook(get_activation(layer))
 
-results = {}
+results = {"target": [], "pred": []}
 dataset = u.KSDataset(config["dataset_dir"], return_c=True)
 for i in range(len(dataset)):
     print("   *** file", i)
@@ -41,7 +41,9 @@ for i in range(len(dataset)):
         if col not in results: results[col] = []
         results[col] += list(df1[col])
     if IS.to(int).equal(IS): IS = IS.to(int)
+    results["target"] += list(OS.detach().numpy())
     PS = model(IS)
+    results["pred"] += list(PS.detach().numpy())
     soms = os.listdir(config["base_som_dir"])
     for somf in soms:
         layer = somf
