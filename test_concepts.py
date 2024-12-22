@@ -1,0 +1,6 @@
+# TODO: construct csv with tests for each concept and each layer.
+#       Layer_order, layer, concept, test1, test2, test3
+#       tests include Ks (kolmogorov), Man withney,  Kullback–Leibler divergence
+
+# layer order included as well...
+# from results.csv but also model... 
