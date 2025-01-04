@@ -1,26 +1,10 @@
 import sys
-import os
 from ksom import SOM
-import utils
 import torch
 from sklearn.decomposition import PCA
 import pygame
 import time
 from argparse import ArgumentParser, FileType
-
-# TODO: remove freq maps from here and create a specific script for it.
-# TODO: script for som images and freq maps
-
-def load_model(fn, device="cpu"):
-    return torch.load(fn, map_location=device, weights_only=False)
-
-def getLayer(model, layer):
-    if "." in layer:
-        first = layer[:layer.index(".")]
-        rest  = layer[layer.index(".")+1:]
-        nmod = getattr(model, first)
-        return getLayer(nmod, rest)
-    return getattr(model, layer) # won't work with subsubmodule
 
 parser = ArgumentParser(prog="view SOM", description="visualiser for activation maps created through ActSOM")
 parser.add_argument('somfile')
@@ -39,25 +23,23 @@ print("MAP of size:", som.somap.shape)
 somap = som.somap.detach().cpu()
 # somap = torch.nan_to_num(somap, 0.0)
 if somap.isnan().any(): 
-        print("SOM has nans...")
-        sys.exit(-1)
+    print("SOM has nans...")
+    sys.exit(-1)
 if somap.shape[1] == 1:
-        somap = somap.repeat(3, 3)
+    somap = somap.repeat(3, 3)
 pca = PCA(n_components=3, random_state=42)
 rsom = pca.fit_transform(somap)
 if torch.tensor(rsom).isnan().any(): 
-        print("PCA SOM has nans...")
-        sys.exit(-1)
+    print("PCA SOM has nans...")
+    sys.exit(-1)
 if rsom.min() != rsom.max():
-        rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
+    rsom = (rsom-rsom.min())/(rsom.max()-rsom.min()) # normalisation
 if torch.tensor(rsom).isnan().any(): 
-        print("Normalised PCA SOM has nans...")
-        sys.exit(-1)
+    print("Normalised PCA SOM has nans...")
+    sys.exit(-1)
 
 screen_size=args.screensize # size of screen 
 hl = "headless" in args and args.headless
-pygame.font.init()
-font = pygame.font.SysFont('Courrier', int((screen_size/som.xs)/4))
 surface = pygame.display.set_mode((screen_size,screen_size))
 if not hl:
     pygame.init()
@@ -89,15 +71,9 @@ def display(somap, som_size, num=False, hl=False, output=None):
         pygame.draw.rect(surface,
                          color,
                          pygame.Rect(x, y, unit, unit))
-        if num and len(cs.shape)==0:
-            ncs = (cs-somap.min())/(somap.max()-somap.min())
-            if ncs>0.5: tc = (50, 50, 50)
-            else: tc = (200, 200, 200)
-            texts = font.render(f"{float(cs)*100:02.2f}%", False, tc)
-            surface.blit(texts, (x+font.size("0")[0]*2,y+font.size("0")[0]*4))
-
-    pygame.display.flip()
-    pygame.display.update()
+    if not hl:
+        pygame.display.flip()
+        pygame.display.update()
     if output:
         pygame.image.save(surface, output)
         print("saved to", output)

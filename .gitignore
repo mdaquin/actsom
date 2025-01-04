@@ -6,6 +6,9 @@
 push.sh
 pull.sh
 
+.vscode
+.venv
+
 */painters/actdata
 */painters/allpainters.json
 */painters/painter_act
