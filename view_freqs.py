@@ -31,7 +31,7 @@ if "concept" in args and args.concept is not None:
     value = args.concept.split(":")[1]
     print(f"looking at {column} with value {value}")
     if type(df[column].iloc[0]) == str: 
-        rdf = df[df.apply(lambda x: value in x[column], axis=1)]
+        rdf = df[df.apply(lambda x: value.lower() in str(x[column]).lower(), axis=1)]
     else: rdf = df[df[column] == float(value)]
     vc = rdf[args.layer].value_counts()
     cmap = np.zeros(tuple(config["som_size"]))

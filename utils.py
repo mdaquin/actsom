@@ -36,3 +36,12 @@ def getLayer(model, layer):
         nmod = getattr(model, first)
         return getLayer(nmod, rest)
     return getattr(model, layer) # won't work with subsubmodule
+
+def list_layers(mo, prevlist=[], prev="", lev=0):
+    for k in mo.__dict__["_modules"]:
+            name = prev+"."+k if prev != "" else k
+            nmo = getattr(mo,k)
+            prevlist.append(name)
+            list_layers(nmo, prevlist=prevlist, prev=name, lev=lev+1)
+    return prevlist
+    
