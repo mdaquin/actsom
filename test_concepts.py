@@ -29,6 +29,7 @@ if type(df[column].iloc[0]) == str:
 else: rdf = df[df[column] == float(value)]
 print(f"found {len(rdf)}/{len(df)} objects of concept {column}={value}")
 
+measures = {}
 for layer in layers:
     # create overall frequency map for each layer
     vc = df[layer].value_counts()
@@ -47,6 +48,8 @@ for layer in layers:
     ks2samp = ks_2samp(fmap.flatten(), cmap.flatten())
     mw = mannwhitneyu(fmap.flatten(), cmap.flatten())
     print(f"KL/KS/MW for {layer}: {klc:.2f}/{ks2samp.statistic:.2f}({ks2samp.pvalue:.2f})/{mw.statistic:.2f}({mw.pvalue:.2f})")
+    measures[layer] = {"KL": klc, "KS": ks2samp.statistic, "KS_p": ks2samp.pvalue, "MW": mw.statistic, "MW_p": mw.pvalue}
+
+pd.DataFrame(measures).T.to_csv(f"{config["results_file"]}_{column}_{value}_metrics.csv")
 
 # compute max F1 for each layer... 
-# export as CSV
