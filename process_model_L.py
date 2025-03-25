@@ -4,7 +4,8 @@ import sys, os
 import json
 from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 import torch.nn as nn
-
+import matplotlib.pyplot as plt    
+from cmcrameri import cm
 
 # =============================================================================
 # https://adamkarvonen.github.io/machine_learning/2024/06/11/sae-intuitions.html
@@ -20,7 +21,8 @@ import torch.nn as nn
 class SparseAutoencoder(nn.Module):
     
     '''    
-    encoding_dim: number of hidden layers    
+    Args: 
+        encoding_dim: number of hidden layers    
     '''
     
     def __init__(self, input_dim, encoding_dim, beta=0.01, rho=0.1):
@@ -43,15 +45,19 @@ class SparseAutoencoder(nn.Module):
     def compute_loss(self, x, decoded, encoded, eps = 1e-27):
     
         '''
-        sparcity penaly : beta * sum (KL(rho|| rho_hat_j))_j^s, where s is the number of hidden layers (encoding_dim)
+        Computes total LOSS during the training SPE 
         
-        Kullback-Leibler (KL) Divergence: measures the difference between the desired sparsity (rho) 
-        and the actual average activation (rho_hat); A higher value means the neuron is deviating more from the target sparsity level. 
-        KL(ρ∣∣ρ^​j​)=ρlog(​ρ/ρ^​j)​+(1−ρ)log[(1−ρ)/(1-ρ^​j)]​
+        Theory: 
+            sparcity penaly : beta * sum (KL(rho|| rho_hat_j))_j^s, where s is the number of hidden layers (encoding_dim)
+            
+            Kullback-Leibler (KL) Divergence: measures the difference between the desired sparsity (rho) 
+            and the actual average activation (rho_hat); A higher value means the neuron is deviating more from the target sparsity level. 
+            KL(ρ∣∣ρ^​j​)=ρlog(​ρ/ρ^​j)​+(1−ρ)log[(1−ρ)/(1-ρ^​j)]​
         
-        rho : the desired sparsity
-        rho_hat : the actual average activation 
-        eps: to avoid devision by zero     
+        Args:      
+            rho : the desired sparsity
+            rho_hat : the actual average activation 
+            eps: to avoid devision by zero     
         
         '''
         rho_hat = torch.mean(encoded, dim=0)
@@ -59,40 +65,19 @@ class SparseAutoencoder(nn.Module):
         KL_div = self.rho * torch.log((self.rho / rho_hat)) + (1 - self.rho) * torch.log(((1 - self.rho) / (1 - rho_hat))) 
         sparcity_penalty = self.beta * torch.sum(KL_div)
         
-        print ("Kullback-Leibler (KL) Divergence: ", torch.mean(KL_div).detach().numpy())
+        #print ("Kullback-Leibler (KL) Divergence: ", torch.mean(KL_div).detach().numpy())
     
         reconstruction_loss = nn.MSELoss()(x, decoded)    
         total_loss = reconstruction_loss + sparcity_penalty 
           
         return total_loss 
-    
-import matplotlib.pyplot as plt    
-def plot_activations(activations, num_neurons=50, neurons_per_row=10, save_path=None):
-    num_rows = (num_neurons + neurons_per_row - 1) // neurons_per_row  
-    fig, axes = plt.subplots(num_rows, neurons_per_row, figsize=(neurons_per_row * 2, num_rows * 2))
-    axes = axes.flatten()
-
-    for i in range(num_neurons):
-        if i >= activations.shape[1]:
-            break
-        ax = axes[i]
-        ax.imshow(activations[:, i].reshape(-1, 1), aspect='auto', cmap='hot')
-        ax.set_title(f'Neuron {i+1}', fontsize=8)
-        ax.tick_params(axis='both', which='major', labelsize=6)
-
-    for j in range(i+1, len(axes)):
-        axes[j].axis('off')
-    
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=600)
-
-    plt.show()
-    
+        
 
 
 def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs=1000, learning_rate=0.001):
+    
+    
+    
     
     input_dim = activations.shape[1]
     activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
@@ -113,6 +98,40 @@ def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs
 
 
 
+def visualize_neuron_activity(activation_data, display_count=50, row_length=10, output_file=None):
+    """
+    Displays activation patterns for a set of neurons.
+
+    Args:
+        activation_data (numpy.ndarray or torch.Tensor): 2D array of neuron activations.
+        display_count (int): Number of neurons to visualize.
+        row_length (int): Number of neurons to display per row.
+        output_file (str, optional): Path to save the visualization. If None, displays the plot.
+    """
+    cmap = cm.lajolla
+    
+    neuron_total_rows = (display_count + row_length - 1) // row_length
+    figure, axis_collection = plt.subplots(neuron_total_rows, row_length, figsize=(row_length * 2, neuron_total_rows * 2))
+    axis_collection = axis_collection.flatten()
+
+    for neuron_index in range(display_count):
+        if neuron_index >= activation_data.shape[1]:
+            break
+
+        current_axis = axis_collection[neuron_index]
+        current_axis.imshow(activation_data[:, neuron_index].reshape(-1, 1), aspect='auto', cmap=cmap)
+        current_axis.set_title(f'Neuron {neuron_index + 1}', fontsize=8)
+        current_axis.tick_params(axis='both', which='major', labelsize=6)
+
+    for remaining_axis in range(neuron_index + 1, len(axis_collection)):
+        axis_collection[remaining_axis].axis('off')
+
+    plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=600)
+    else:
+        plt.show()
 
 
 
@@ -241,11 +260,13 @@ if __name__ == "__main__":
             if layer not in SOMs: 
                 print("      *** creating", layer)
                 
-                encoding_dim = 640 # do aut layer by laer 5 * [,,X]
+                encoding_dim = 3 * acts.size()[1]
                 
                 encoded_activations, trained_autoencoder = train_SparseAE(device,acts.cpu().detach().numpy(), encoding_dim)
                 print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
-                plot_activations(acts.cpu().detach().numpy(), num_neurons=40, neurons_per_row=10, save_path=None)
+                visualize_neuron_activity(encoded_activations, display_count=8, row_length=4)
+                
+                
                 
                 perm = torch.randperm(acts.size(0))
                 samples = acts[perm[-(som_size[0]*som_size[1]):]]
