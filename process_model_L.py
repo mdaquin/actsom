@@ -75,10 +75,7 @@ class SparseAutoencoder(nn.Module):
 
 
 def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs=1000, learning_rate=0.001):
-    
-    
-    
-    
+       
     input_dim = activations.shape[1]
     activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
     autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta, rho).to(device)
@@ -203,7 +200,7 @@ if __name__ == "__main__":
 
     som_size = config["som_size"]
     base_som_dir = config["base_som_dir"]
-    
+    base_spe = 'painters/base_spe'
     SOMs = {}
     mm = {}
 
@@ -266,7 +263,8 @@ if __name__ == "__main__":
                 print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
                 visualize_neuron_activity(encoded_activations, display_count=8, row_length=4)
                 
-                
+                # save model 
+                torch.save(trained_autoencoder,base_spe+"/"+layer+".pt")
                 
                 perm = torch.randperm(acts.size(0))
                 samples = acts[perm[-(som_size[0]*som_size[1]):]]
