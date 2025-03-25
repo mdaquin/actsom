@@ -54,7 +54,8 @@ class SparseAutoencoder(nn.Module):
             and the actual average activation (rho_hat); A higher value means the neuron is deviating more from the target sparsity level. 
             KL(ρ∣∣ρ^​j​)=ρlog(​ρ/ρ^​j)​+(1−ρ)log[(1−ρ)/(1-ρ^​j)]​
         
-        Args:      
+        Args:
+            beta: sparsity loss coefficient
             rho : the desired sparsity
             rho_hat : the actual average activation 
             eps: to avoid devision by zero     
@@ -74,6 +75,7 @@ class SparseAutoencoder(nn.Module):
         
 
 
+
 def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs=1000, learning_rate=0.001):
        
     input_dim = activations.shape[1]
@@ -90,7 +92,10 @@ def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs
         print(f'Sparse AE Epoch {epoch+1}, Loss: {loss.item()}')
         
     encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
-    return encoded_activations, autoencoder
+    decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
+
+    return encoded_activations, decoded_activations, autoencoder
+
 
 
 
@@ -259,9 +264,10 @@ if __name__ == "__main__":
                 
                 encoding_dim = 3 * acts.size()[1]
                 
-                encoded_activations, trained_autoencoder = train_SparseAE(device,acts.cpu().detach().numpy(), encoding_dim)
+                encoded_activations, decoded_activations, trained_autoencoder = train_SparseAE(device,acts.cpu().detach().numpy(), encoding_dim)
                 print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
-                visualize_neuron_activity(encoded_activations, display_count=8, row_length=4)
+                print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
+                visualize_neuron_activity(decoded_activations, display_count=8, row_length=4)
                 
                 # save model 
                 torch.save(trained_autoencoder,base_spe+"/"+layer+".pt")
