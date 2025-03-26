@@ -6,6 +6,8 @@ from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 import torch.nn as nn
 import matplotlib.pyplot as plt    
 from cmcrameri import cm
+import numpy as np
+from custom_functions import visualize_neuron_activity_all, check_neuron, plot_training_errors
 
 # =============================================================================
 # https://adamkarvonen.github.io/machine_learning/2024/06/11/sae-intuitions.html
@@ -13,9 +15,6 @@ from cmcrameri import cm
 # e.g. if d_model = 12288 and dictionary_size = 49152
 # then model_activations_D.shape = (12288,) and encoder_DF.weight.shape = (12288, 49152)
 # =============================================================================
-
-
-
 
 
 class SparseAutoencoder(nn.Module):
@@ -55,7 +54,7 @@ class SparseAutoencoder(nn.Module):
             KL(ρ∣∣ρ^​j​)=ρlog(​ρ/ρ^​j)​+(1−ρ)log[(1−ρ)/(1-ρ^​j)]​
         
         Args:
-            beta: sparsity loss coefficient
+            beta: sparsity loss coefficient or weitgh of sparcite penalty 
             rho : the desired sparsity
             rho_hat : the actual average activation 
             eps: to avoid devision by zero     
@@ -66,18 +65,25 @@ class SparseAutoencoder(nn.Module):
         KL_div = self.rho * torch.log((self.rho / rho_hat)) + (1 - self.rho) * torch.log(((1 - self.rho) / (1 - rho_hat))) 
         sparcity_penalty = self.beta * torch.sum(KL_div)
         
+        #print("rho_hat =  ",rho_hat)
         #print ("Kullback-Leibler (KL) Divergence: ", torch.mean(KL_div).detach().numpy())
     
         reconstruction_loss = nn.MSELoss()(x, decoded)    
         total_loss = reconstruction_loss + sparcity_penalty 
           
-        return total_loss 
+        return total_loss,  reconstruction_loss.item(), sparcity_penalty.item() 
         
 
 
 
-def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs=1000, learning_rate=0.001):
-       
+def train_SparseAE(layer, device, activations, encoding_dim, beta=0.1, rho=5e-4, epochs=1000, learning_rate=0.001):
+    
+    reconstruction_losses = []
+    sparsity_penalties = []
+    total_losses = []
+    
+    maxEr = np.inf 
+    
     input_dim = activations.shape[1]
     activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
     autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta, rho).to(device)
@@ -86,54 +92,23 @@ def train_SparseAE(device, activations, encoding_dim, beta=0.1, rho=5e-2, epochs
     for epoch in range(epochs):
         optimizer.zero_grad()
         decoded, encoded = autoencoder(activation_transformed)
-        loss = autoencoder.compute_loss(activation_transformed, decoded, encoded)
-        loss.backward()
+        total_loss, recon_loss_val, sparsity_val = autoencoder.compute_loss(activation_transformed, decoded, encoded)
+        if total_loss < maxEr:
+                torch.save(autoencoder,base_spe+"/"+layer+".pt")
+        total_loss.backward()
         optimizer.step()
-        print(f'Sparse AE Epoch {epoch+1}, Loss: {loss.item()}')
-        
+
+        reconstruction_losses.append(recon_loss_val)
+        sparsity_penalties.append(sparsity_val)
+        total_losses.append(total_loss.item())
+        print(f'Sparse AE Epoch {epoch+1}, Total Loss: {total_loss.item():.4f}, Recon Loss: {recon_loss_val:.4f}, Sparsity: {sparsity_val:.4f}')
+
     encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
     decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
 
-    return encoded_activations, decoded_activations, autoencoder
+    return encoded_activations, decoded_activations, autoencoder, reconstruction_losses, sparsity_penalties, total_losses
 
 
-
-
-
-def visualize_neuron_activity(activation_data, display_count=50, row_length=10, output_file=None):
-    """
-    Displays activation patterns for a set of neurons.
-
-    Args:
-        activation_data (numpy.ndarray or torch.Tensor): 2D array of neuron activations.
-        display_count (int): Number of neurons to visualize.
-        row_length (int): Number of neurons to display per row.
-        output_file (str, optional): Path to save the visualization. If None, displays the plot.
-    """
-    cmap = cm.lajolla
-    
-    neuron_total_rows = (display_count + row_length - 1) // row_length
-    figure, axis_collection = plt.subplots(neuron_total_rows, row_length, figsize=(row_length * 2, neuron_total_rows * 2))
-    axis_collection = axis_collection.flatten()
-
-    for neuron_index in range(display_count):
-        if neuron_index >= activation_data.shape[1]:
-            break
-
-        current_axis = axis_collection[neuron_index]
-        current_axis.imshow(activation_data[:, neuron_index].reshape(-1, 1), aspect='auto', cmap=cmap)
-        current_axis.set_title(f'Neuron {neuron_index + 1}', fontsize=8)
-        current_axis.tick_params(axis='both', which='major', labelsize=6)
-
-    for remaining_axis in range(neuron_index + 1, len(axis_collection)):
-        axis_collection[remaining_axis].axis('off')
-
-    plt.tight_layout()
-
-    if output_file:
-        plt.savefig(output_file, dpi=600)
-    else:
-        plt.show()
 
 
 
@@ -262,15 +237,38 @@ if __name__ == "__main__":
             if layer not in SOMs: 
                 print("      *** creating", layer)
                 
-                encoding_dim = 3 * acts.size()[1]
+                encoding_dim = 3 * acts.size()[1]                
                 
-                encoded_activations, decoded_activations, trained_autoencoder = train_SparseAE(device,acts.cpu().detach().numpy(), encoding_dim)
+                encoded_activations, \
+                decoded_activations, \
+                trained_autoencoder, \
+                reconstruction_losses, \
+                sparsity_penalties, \
+                total_losses = train_SparseAE(layer,
+                                              device,
+                                              acts.cpu().detach().numpy(), 
+                                              encoding_dim)   
+
+                
+                
                 print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
                 print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
-                visualize_neuron_activity(decoded_activations, display_count=8, row_length=4)
                 
-                # save model 
-                torch.save(trained_autoencoder,base_spe+"/"+layer+".pt")
+                visualize_neuron_activity_all(encoded_activations, display_count=6, row_length=3)
+                
+                plot_training_errors(reconstruction_losses, sparsity_penalties, total_losses)
+               
+# =============================================================================
+#                 not working -> idea to find idx of all inactive neurons ... 
+# =============================================================================
+                #idx = np.where(np.all(encoded_activations, axis=0)<8e-4)[0]
+                #idx_rand = np.random.choice(idx, 3, replace=False)
+                #visualize_neuron_activity(layer, encoded_activations, idx_rand)
+                
+                neuron_index= 3
+                check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
+               
+                
                 
                 perm = torch.randperm(acts.size(0))
                 samples = acts[perm[-(som_size[0]*som_size[1]):]]
