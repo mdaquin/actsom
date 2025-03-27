@@ -87,26 +87,31 @@ def check_neuron(activation_data, decoded_activations, neuron_index):
 
 
 
-def plot_training_errors(reconstruction_losses, sparsity_penalties, total_losses):
+def plot_training_errors(path,rho,layer,beta,reconstruction_losses, sparsity_penalties, total_losses):
     epochs = range(1, len(total_losses) + 1)
+    
+    path = path +"loss_"+layer+"_beta_"+str(beta)+"_rho_"+str(rho)+".png"
 
     plt.figure(figsize=(10, 5))
 
     plt.subplot(1, 2, 1)
+    
     plt.plot(epochs, reconstruction_losses, label='Reconstruction Loss')
     plt.plot(epochs, total_losses, label='Total Loss', linestyle='--')
+    plt.plot(epochs, sparsity_penalties, label='Sparsity Penalty')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.title('Reconstruction and Total Loss')
+    plt.title(f'rho:{rho}, layer: {layer}; beta = {beta}')
     plt.legend()
 
     plt.subplot(1, 2, 2)
-    plt.plot(epochs, sparsity_penalties, label='Sparsity Penalty', color='orange')
-    plt.plot(epochs, total_losses, label='Total Loss', linestyle='--')
-    plt.xlabel('Epoch')
-    plt.ylabel('Penalty/Loss')
-    plt.title('Sparsity Penalty and Total Loss')
-    plt.legend()
+    #plt.plot(epochs, sparsity_penalties, label='Sparsity Penalty', color='orange')
+    plt.plot(sparsity_penalties, total_losses, linestyle='-')
+    
+    plt.xlabel('Sparsity Penalty')
+    plt.ylabel('Total Loss')
+    plt.title(f'rho:{rho}, layer: {layer}; beta = {beta}')
 
     plt.tight_layout()
+    plt.savefig(path, dpi=600)
     plt.show()

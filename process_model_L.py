@@ -77,34 +77,40 @@ class SparseAutoencoder(nn.Module):
 
 
 def train_SparseAE(layer, device, activations, encoding_dim, beta=0.1, rho=5e-4, epochs=1000, learning_rate=0.001):
+    path = base_spe+"/loss_res/"
+    for beta in [1e-4,1e-1,1e0,1e1,1e2]:
+        for rho in [5e-6,5e-4,5e-2]:
+            
     
-    reconstruction_losses = []
-    sparsity_penalties = []
-    total_losses = []
-    
-    maxEr = np.inf 
-    
-    input_dim = activations.shape[1]
-    activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
-    autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta, rho).to(device)
-    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate)
-    
-    for epoch in range(epochs):
-        optimizer.zero_grad()
-        decoded, encoded = autoencoder(activation_transformed)
-        total_loss, recon_loss_val, sparsity_val = autoencoder.compute_loss(activation_transformed, decoded, encoded)
-        if total_loss < maxEr:
-                torch.save(autoencoder,base_spe+"/"+layer+".pt")
-        total_loss.backward()
-        optimizer.step()
-
-        reconstruction_losses.append(recon_loss_val)
-        sparsity_penalties.append(sparsity_val)
-        total_losses.append(total_loss.item())
-        print(f'Sparse AE Epoch {epoch+1}, Total Loss: {total_loss.item():.4f}, Recon Loss: {recon_loss_val:.4f}, Sparsity: {sparsity_val:.4f}')
-
-    encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
-    decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
+            reconstruction_losses = []
+            sparsity_penalties = []
+            total_losses = []
+            
+            maxEr = np.inf 
+            
+            input_dim = activations.shape[1]
+            activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
+            autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta=beta, rho=rho).to(device)
+            optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate)
+            
+            for epoch in range(epochs):
+                optimizer.zero_grad()
+                decoded, encoded = autoencoder(activation_transformed)
+                total_loss, recon_loss_val, sparsity_val = autoencoder.compute_loss(activation_transformed, decoded, encoded)
+                if total_loss < maxEr:
+                        torch.save(autoencoder,base_spe+"/"+layer+".pt")
+                total_loss.backward()
+                optimizer.step()
+        
+                reconstruction_losses.append(recon_loss_val)
+                sparsity_penalties.append(sparsity_val)
+                total_losses.append(total_loss.item())
+                print(f'Sparse AE Epoch {epoch+1}, Total Loss: {total_loss.item():.4f}, Recon Loss: {recon_loss_val:.4f}, Sparsity: {sparsity_val:.4f}')
+        
+            encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
+            decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
+        
+            plot_training_errors(path,rho,layer, beta, reconstruction_losses, sparsity_penalties, total_losses)
 
     return encoded_activations, decoded_activations, autoencoder, reconstruction_losses, sparsity_penalties, total_losses
 
@@ -238,7 +244,7 @@ if __name__ == "__main__":
                 print("      *** creating", layer)
                 
                 encoding_dim = 3 * acts.size()[1]                
-                
+                                    
                 encoded_activations, \
                 decoded_activations, \
                 trained_autoencoder, \
@@ -254,9 +260,9 @@ if __name__ == "__main__":
                 print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
                 print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
                 
-                visualize_neuron_activity_all(encoded_activations, display_count=6, row_length=3)
+                #visualize_neuron_activity_all(encoded_activations, display_count=12, row_length=4)
                 
-                plot_training_errors(reconstruction_losses, sparsity_penalties, total_losses)
+                
                
 # =============================================================================
 #                 not working -> idea to find idx of all inactive neurons ... 
@@ -266,7 +272,7 @@ if __name__ == "__main__":
                 #visualize_neuron_activity(layer, encoded_activations, idx_rand)
                 
                 neuron_index= 3
-                check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
+                #check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
                
                 
                 
