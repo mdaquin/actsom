@@ -76,10 +76,10 @@ class SparseAutoencoder(nn.Module):
 
 
 
-def train_SparseAE(layer, device, activations, encoding_dim, beta=0.1, rho=5e-4, epochs=1000, learning_rate=0.001):
+def train_SparseAE(autoencoder, layer, device, activations, encoding_dim, beta=0.1, rho=5e-4, epochs=1000, learning_rate=0.001):
     path = base_spe+"/loss_res/"
-    for beta in [1e-4,1e-1,1e0,1e1,1e2]:
-        for rho in [5e-6,5e-4,5e-2]:
+    for beta in [1e-5]:#,1e-1,1e0,1e1,1e2]:
+        for rho in [5e-6]:#,5e-4,5e-2]:
             
     
             reconstruction_losses = []
@@ -90,7 +90,7 @@ def train_SparseAE(layer, device, activations, encoding_dim, beta=0.1, rho=5e-4,
             
             input_dim = activations.shape[1]
             activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
-            autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta=beta, rho=rho).to(device)
+            # autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta=beta, rho=rho).to(device)
             optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate)
             
             for epoch in range(epochs):
@@ -110,7 +110,7 @@ def train_SparseAE(layer, device, activations, encoding_dim, beta=0.1, rho=5e-4,
             encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
             decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
         
-            plot_training_errors(path,rho,layer, beta, reconstruction_losses, sparsity_penalties, total_losses)
+            # plot_training_errors(path,rho,layer, beta, reconstruction_losses, sparsity_penalties, total_losses)
 
     return encoded_activations, decoded_activations, autoencoder, reconstruction_losses, sparsity_penalties, total_losses
 
@@ -188,6 +188,7 @@ if __name__ == "__main__":
     base_som_dir = config["base_som_dir"]
     base_spe = 'painters/base_spe'
     SOMs = {}
+    SAE = {}
     mm = {}
 
     data_dir = config["dataset_dir"]
@@ -243,22 +244,23 @@ if __name__ == "__main__":
             if layer not in SOMs: 
                 print("      *** creating", layer)
                 
-                encoding_dim = 3 * acts.size()[1]                
+                encoding_dim = 3 * acts.size()[1]              
+                SAE[layer] = SparseAutoencoder(acts.size()[1], encoding_dim, beta=1e-5, rho=5e-6).to(device)  
                                     
-                encoded_activations, \
-                decoded_activations, \
-                trained_autoencoder, \
-                reconstruction_losses, \
-                sparsity_penalties, \
-                total_losses = train_SparseAE(layer,
-                                              device,
-                                              acts.cpu().detach().numpy(), 
-                                              encoding_dim)   
+                # encoded_activations, \
+                # decoded_activations, \
+                # trained_autoencoder, \
+                # reconstruction_losses, \
+                # sparsity_penalties, \
+                # total_losses = train_SparseAE(layer,
+                #                               device,
+                #                               acts.cpu().detach().numpy(), 
+                #                               encoding_dim)   
 
                 
                 
-                print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
-                print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
+                # print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
+                # print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
                 
                 #visualize_neuron_activity_all(encoded_activations, display_count=12, row_length=4)
                 
@@ -271,10 +273,9 @@ if __name__ == "__main__":
                 #idx_rand = np.random.choice(idx, 3, replace=False)
                 #visualize_neuron_activity(layer, encoded_activations, idx_rand)
                 
-                neuron_index= 3
-                #check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
+                # neuron_index= 3
+                # check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
                
-                
                 
                 perm = torch.randperm(acts.size(0))
                 samples = acts[perm[-(som_size[0]*som_size[1]):]]
@@ -295,6 +296,18 @@ if __name__ == "__main__":
             
             print("   *** adding to SOM for",layer)
             change,count = SOMs[layer].add(acts.to(device))
+            print("    train autoencoder")
+            encoded_activations, \
+            decoded_activations, \
+            trained_autoencoder, \
+            reconstruction_losses, \
+            sparsity_penalties, \
+            total_losses = train_SparseAE(SAE[layer], layer,
+                                               device,
+                                               acts.cpu().detach().numpy(), 
+                                               acts.size()[1]*3.0)   
+            neuron_index= 3
+            check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
             print(f"      {count}/{len(acts)} elements resulted in a change of {change}")
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
             # NaNs happen quickly, from first relu layer.
