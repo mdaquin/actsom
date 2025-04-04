@@ -1,56 +1,15 @@
-import pandas as panda
 import torch
 import sys, os
 import json
 from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 import numpy as np
 from custom_functions import visualize_neuron_activity_all, check_neuron, plot_training_errors
+import torch.nn.functional as F
+from sparce_autoencoder import SparseAutoencoder, train_SparseAE
+from torch.utils.data import Dataset, DataLoader
 
-from sparce_autoencoder import SparseAutoencoder
-
-# =============================================================================
-# https://adamkarvonen.github.io/machine_learning/2024/06/11/sae-intuitions.html
-# D = d_model, F = dictionary_size
-# e.g. if d_model = 12288 and dictionary_size = 49152
-# then model_activations_D.shape = (12288,) and encoder_DF.weight.shape = (12288, 49152)
-# =============================================================================
-
-
-def train_SparseAE(autoencoder, layer, device, activations, encoding_dim, beta=1e-5, rho=5e-6, epochs=1000, learning_rate=0.001):
-    path = base_spe+"/loss_res/"
-    reconstruction_losses = []
-    sparsity_penalties = []
-    total_losses = []
-    
-    maxEr = np.inf 
-    
-    input_dim = activations.shape[1]
-    activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
-    # autoencoder = SparseAutoencoder(input_dim, encoding_dim, beta=beta, rho=rho).to(device)
-    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate)
-    
-    for epoch in range(epochs):
-        optimizer.zero_grad()
-        decoded, encoded = autoencoder(activation_transformed)
-        total_loss, recon_loss_val, sparsity_val = autoencoder.compute_loss(activation_transformed, decoded, encoded)
-        if total_loss < maxEr:
-                torch.save(autoencoder,base_spe+"/"+layer+".pt")
-        total_loss.backward()
-        optimizer.step()
-
-        reconstruction_losses.append(recon_loss_val)
-        sparsity_penalties.append(sparsity_val)
-        total_losses.append(total_loss.item())
-        print(f'Sparse AE Epoch {epoch+1}, Total Loss: {total_loss.item():.4f}, Recon Loss: {recon_loss_val:.4f}, Sparsity: {sparsity_val:.4f}')
-
-    encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
-    decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
-    
-            # plot_training_errors(path,rho,layer, beta, reconstruction_losses, sparsity_penalties, total_losses)
-
-    return encoded_activations, decoded_activations, autoencoder, reconstruction_losses, sparsity_penalties, total_losses
-
-
+SEED = 43
+torch.manual_seed(SEED)
 
 # =============================================================================
 # 
@@ -177,20 +136,7 @@ if __name__ == "__main__":
                 encoding_dim = 3 * acts.size()[1]              
                 SAE[layer] = SparseAutoencoder(acts.size()[1], encoding_dim, beta=1e-5, rho=5e-6).to(device)  
                                     
-                # encoded_activations, \
-                # decoded_activations, \
-                # trained_autoencoder, \
-                # reconstruction_losses, \
-                # sparsity_penalties, \
-                # total_losses = train_SparseAE(layer,
-                #                               device,
-                #                               acts.cpu().detach().numpy(), 
-                #                               encoding_dim)   
-
                 
-                
-                # print(f"Encoded Activations shape for layer {layer}:", encoded_activations.shape)
-                # print(f"Decoded Activations shape for layer {layer}:", decoded_activations.shape)
                 
                 #visualize_neuron_activity_all(encoded_activations, display_count=12, row_length=4)
                 
@@ -232,7 +178,7 @@ if __name__ == "__main__":
             trained_autoencoder, \
             reconstruction_losses, \
             sparsity_penalties, \
-            total_losses = train_SparseAE(SAE[layer], layer,
+            total_losses = train_SparseAE(SAE[layer],base_spe, layer,
                                                device,
                                                acts.cpu().detach().numpy(), 
                                                acts.size()[1]*3.0)   
@@ -246,3 +192,5 @@ if __name__ == "__main__":
                 print ("*** NaN!")
                 SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
         print("*** done ***")
+        print ("*** integration of the trained sparce autoencoder and painter model")
+        

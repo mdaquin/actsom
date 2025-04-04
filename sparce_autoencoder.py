@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch 
-
+import numpy as np 
 
 class SparseAutoencoder(nn.Module):
     
@@ -57,3 +57,40 @@ class SparseAutoencoder(nn.Module):
         total_loss = reconstruction_loss + sparcity_penalty 
           
         return total_loss,  reconstruction_loss.item(), sparcity_penalty.item() 
+    
+    
+def train_SparseAE(autoencoder, base_spe,layer, device, activations, encoding_dim, beta=1e-5, rho=5e-6, epochs=1000, learning_rate=0.001):
+    
+    reconstruction_losses = []
+    sparsity_penalties = []
+    total_losses = []
+    
+    maxEr = np.inf 
+    
+    activation_transformed = torch.tensor(activations, dtype=torch.float32).to(device)
+    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=learning_rate)
+    
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+        decoded, encoded = autoencoder(activation_transformed)
+        total_loss, recon_loss_val, sparsity_val = autoencoder.compute_loss(activation_transformed, decoded, encoded)
+        if total_loss < maxEr:
+                torch.save(autoencoder,base_spe+"/"+layer+".pt")
+        total_loss.backward()
+        optimizer.step()
+
+        reconstruction_losses.append(recon_loss_val)
+        sparsity_penalties.append(sparsity_val)
+        total_losses.append(total_loss.item())
+        print(f'Sparse AE Epoch {epoch+1}, Total Loss: {total_loss.item():.4f}, Recon Loss: {recon_loss_val:.4f}, Sparsity: {sparsity_val:.4f}')
+
+    encoded_activations = autoencoder.encoder(activation_transformed).detach().cpu().numpy()
+    decoded_activations = autoencoder.decoder(autoencoder.encoder(activation_transformed)).detach().cpu().numpy() 
+    
+            #     path = base_spe+"/loss_res/"
+
+            # plot_training_errors(path,rho,layer, beta, reconstruction_losses, sparsity_penalties, total_losses)
+            
+
+    return encoded_activations, decoded_activations, autoencoder, reconstruction_losses, sparsity_penalties, total_losses
+    
