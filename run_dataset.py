@@ -32,6 +32,7 @@ for som in soms:
     smod.register_forward_hook(get_activation(layer))
 
 results = {"target": [], "pred": []}
+saeactivations = {}
 dataset = u.KSDataset(config["dataset_dir"], return_c=True)
 for i in range(len(dataset)):
     print("   *** file", i)
@@ -70,5 +71,15 @@ for i in range(len(dataset)):
         # res = [layer+"_"+str(x) for x in res]
         if layer not in results: results[layer] = []
         results[layer] += list(res)
+        sae = config["base_sae_dir"]+"/"+layer+".pt"
+        if not os.path.exists(sae): continue
+        print("      *** applying SAE for",layer)
+        sae = torch.load(sae, weights_only=False)
+        sae.to("cpu")
+        res = sae(acts)[1]
+        if layer not in saeactivations: saeactivations[layer] = []
+        saeactivations[layer].append(res.detach().numpy().tolist())
 df = pd.DataFrame(results)
-df.to_csv(config["results_file"])
+df.to_csv(config["som_results_file"])
+for layer in saeactivations:
+    json.dump(saeactivations[layer], open(config["sae_results_dir"]+layer+".json", "w"))

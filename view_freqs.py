@@ -16,9 +16,9 @@ args = parser.parse_args()
 
 config = json.load(open(args.configfile))
 
-print("opening", config["results_file"])
+print("opening", config["som_results_file"])
 
-df = pd.read_csv(config["results_file"])
+df = pd.read_csv(config["som_results_file"])
 vc = df[args.layer].value_counts()
 fmap = np.zeros(tuple(config["som_size"]))
 for i in vc.index: 

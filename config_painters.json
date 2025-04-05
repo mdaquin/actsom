@@ -5,9 +5,11 @@
     "aggregation" : "mean",
     "som_size": [5,5],
     "base_som_dir": "painters/base_soms/",
+    "base_sae_dir": "painters/base_spe/",
     "inputisint": 1, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,
     "eval": "precision", 
-    "results_file": "painters/results.csv"
+    "som_results_file": "painters/results.csv", 
+    "sae_results_dir": "painters/sae_results/"
 }
