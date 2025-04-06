@@ -1,4 +1,3 @@
-
 from argparse import ArgumentParser
 import json, sys
 import numpy as np
