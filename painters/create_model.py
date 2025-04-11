@@ -94,7 +94,7 @@ print("Train size:",len(traind),"Test size:", len(testd))
 train_loader = DataLoader(traind, batch_size=BS, shuffle=True)
 test_loader = DataLoader(testd, batch_size=1024, shuffle=False)
 
-model=PainterModel(3843, ES, LS, MS, DOR,encoding_dim=100).to(device)
+model=PainterModel(3843, ES, LS, MS, DOR).to(device)
 criterion = torch.nn.BCELoss() 
 optimizer = torch.optim.Adam(model.parameters(),lr = LR)
 
