@@ -133,7 +133,7 @@ if __name__ == "__main__":
                 print("      *** creating", layer)
                 
                 encoding_dim = 3 * acts.size()[1]              
-                SAE[layer] = SparseAutoencoder(acts.size()[1], encoding_dim, beta=1e-5, rho=5e-6).to(device)  
+                SAE[layer] = SparseAutoencoder(acts.size()[1], encoding_dim, beta=1e-2, rho=1e-3).to(device)  
                                     
                 
                 

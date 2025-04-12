@@ -9,7 +9,7 @@ class SparseAutoencoder(nn.Module):
         encoding_dim: number of hidden layers    
     '''
     
-    def __init__(self, input_dim, encoding_dim, beta=0.01, rho=0.1):
+    def __init__(self, input_dim, encoding_dim, beta=0.01, rho=0.01):
         super(SparseAutoencoder, self).__init__()
        
         self.encoder = nn.Sequential(nn.Linear(input_dim, encoding_dim), nn.Sigmoid())
@@ -57,7 +57,7 @@ class SparseAutoencoder(nn.Module):
         return total_loss,  reconstruction_loss.item(), sparcity_penalty.item() 
     
     
-def train_SparseAE(autoencoder, base_spe,layer, device, activations, encoding_dim, beta=1e-5, rho=5e-6, epochs=1000, learning_rate=0.001):
+def train_SparseAE(autoencoder, base_spe,layer, device, activations, encoding_dim, beta=1e-3, rho=5e-6, epochs=1000, learning_rate=0.001):
     
     reconstruction_losses = []
     sparsity_penalties = []

@@ -112,7 +112,7 @@ ind = np.argsort(hms)
 neurons = {}
 for i in ind[::-1]:
     n, c = neur_conc[i]
-    if hms[i] <= 3.0: break
+    if hms[i] <= 2.0: break
     if n not in neurons: neurons[n] = []
     neurons[n].append(f"{concept_ind[c]} ({hms[i]:.3f})")
 for n in neurons:
