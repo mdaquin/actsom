@@ -21,8 +21,6 @@ def load_model(fn, device="cpu"):
     return torch.load(fn, map_location=device, weights_only=False)
 
 
-
-
 def set_up_activations(model):
     global activation
     llayers = []
@@ -124,6 +122,7 @@ if __name__ == "__main__":
                     "max": acts.max(dim=0).values.to(device)
                     }
             # normalisation based on min/max of first dataset
+            oacts = acts.clone()
             acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
             
             ### --------- Start of the stting up the SOM --------- ### 
@@ -180,10 +179,10 @@ if __name__ == "__main__":
             sparsity_penalties, \
             total_losses = train_SparseAE(SAE[layer],base_spe, layer,
                                                device,
-                                               acts.cpu().detach().numpy(), 
-                                               acts.size()[1]*3.0)   
+                                               oacts.cpu().detach().numpy(), 
+                                               oacts.size()[1]*3.0)   
             neuron_index= 3
-            check_neuron(acts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
+            check_neuron(oacts.cpu().detach().numpy(), decoded_activations, neuron_index=neuron_index)
             print(f"      {count}/{len(acts)} elements resulted in a change of {change}")
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
             # NaNs happen quickly, from first relu layer.

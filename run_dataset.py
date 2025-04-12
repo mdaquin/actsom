@@ -64,7 +64,7 @@ for i in range(len(dataset)):
         else:
             print("unknown aggregation")
             sys.exit(-1)
-        acts = (acts-som.minval.cpu())/(som.maxval.cpu()-som.minval.cpu())
+        acts = (acts-som.minval.cpu())/(som.maxval.cpu()-som.minval.cpu()) # we don't do this for SAE combination...
         res = som(acts)[0]
         res = res.numpy().T
         res = res[0]*som.xs+res[1]
@@ -76,7 +76,7 @@ for i in range(len(dataset)):
         print("      *** applying SAE for",layer)
         sae = torch.load(sae, weights_only=False)
         sae.to("cpu")
-        res = sae(acts)[1]
+        res = sae(acts)[1] # OK here, but not in combination...
         if layer not in saeactivations: saeactivations[layer] = []
         saeactivations[layer].append(res.detach().numpy().tolist())
 df = pd.DataFrame(results)
