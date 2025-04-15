@@ -1,9 +1,10 @@
 
-import json
-import os
+import json # remove
+import os # remove
 
 import torch
 
+# remove...
 class KSDataset : 
 
     def __init__(self, data_dirname, return_c=False):
@@ -44,4 +45,27 @@ def list_layers(mo, prevlist=[], prev="", lev=0):
             prevlist.append(name)
             list_layers(nmo, prevlist=prevlist, prev=name, lev=lev+1)
     return prevlist
+
+activation = {}
+
+def set_up_activations(model):
+    global activation
+    llayers = []
+    def get_activation(name):
+        def hook(model, input, output):
+            if type(output) != torch.Tensor: activation[name] = output
+            else: 
+                activation[name] = output.cpu().detach()
+                # print(name, activation[name].shape)
+        return hook
+    def rec_reg_hook(mo, prev="", lev=0):
+        for k in mo.__dict__["_modules"]:
+            name = prev+"."+k if prev != "" else k
+            nmo = getattr(mo,k)
+            nmo.register_forward_hook(get_activation(name))
+            print("--"+"--"*lev, "hook added for",name)
+            llayers.append(name)
+            rec_reg_hook(nmo, prev=name, lev=lev+1)
+        return llayers
+    return rec_reg_hook(model)
     

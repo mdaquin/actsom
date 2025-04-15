@@ -1,105 +1,94 @@
 import pandas as panda
-import torch
-import sys, os
-import json
+import torch, sys, os, json
 from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
+import importlib as imp
+import utils as u
 
-# TODO figure out the NaNs in SOMs
-
-def load_model(fn, device="cpu"):
-    return torch.load(fn, map_location=device, weights_only=False)
-
-def set_up_activations(model):
-    global activation
-    llayers = []
-    def get_activation(name):
-        def hook(model, input, output):
-            if type(output) != torch.Tensor: activation[name] = output
-            else: 
-                activation[name] = output.cpu().detach()
-                # print(name, activation[name].shape)
-        return hook
-    def rec_reg_hook(mo, prev="", lev=0):
-        for k in mo.__dict__["_modules"]:
-            name = prev+"."+k if prev != "" else k
-            nmo = getattr(mo,k)
-            nmo.register_forward_hook(get_activation(name))
-            print("--"+"--"*lev, "hook added for",name)
-            llayers.append(name)
-            rec_reg_hook(nmo, prev=name, lev=lev+1)
-        return llayers
-    return rec_reg_hook(model)
-    
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-        conf = "config_painters.json"
-        #print("provide configuration file (JSON)")
-        #sys.exit(-1)
+        print("provide configuration file (JSON)")
+        sys.exit(1)
     else: conf = sys.argv[1]
-    
+
+    # base config
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device == torch.device("cuda"): print("USING GPU")
-        
     config = json.load(open(conf))
-    exec(open(config["modelclass"]).read())
-    model = load_model(config["model"], device=device)
-    activation = {}
-    list_layers = set_up_activations(model)
-
+    torch.manual_seed(config["seed"])
     som_size = config["som_size"]
-    base_som_dir = config["base_som_dir"]
-    
+    base_som_dir = config["somdir"]
+
+    with torch.no_grad():
+     print("Loading model...")   
+     # exec(open(config["modelclass"]).read())
+     spec = imp.util.spec_from_file_location(config["modelmodulename"], config["modelclass"])
+     module = imp.util.module_from_spec(spec)
+     sys.modules[config["modelmodulename"]] = module
+     spec.loader.exec_module(module)
+     model = u.load_model(config["model"], device=device)
+     model.eval()
+
+    print("Loading dataset...")
+    spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
+    module = imp.util.module_from_spec(spec)
+    sys.modules[config["datasetmodulename"]] = module
+    spec.loader.exec_module(module)
+    exec("import "+config["datasetmodulename"])
+    data = eval(config["datasetcode"])
+    data_loader = torch.utils.data.DataLoader(data, batch_size=config["batchsize"], shuffle=True)
+
+    print("Setting up activation hooks...")
+    u.activation = {}
+    list_layers = u.set_up_activations(model)
+    print(list_layers)
+
+    print("Training SOMs")
     SOMs = {}
     mm = {}
-
-    data_dir = config["dataset_dir"]
-    for f in os.listdir(data_dir):
-        print("*** loading", f, "***")
-        data = json.load(open(data_dir+"/"+f))
-        IS = []
-        OS = []
-        for d in data: 
-            IS.append(d["I"])
-            OS.append(d["O"])
-        IS = torch.Tensor(IS)
-        OS = torch.Tensor(OS)
-        if "inputisint" in config and config["inputisint"] == 1: IS = IS.to(torch.int)
-        IS = IS.to(device)
-        OS = OS.to(device)
-        print("*** applying model ***")
-        activation = {}
-        P = model(IS)
-        if config["eval"] == "precision":
-            prec = 1-(abs(OS - (P>=0.5).to(torch.int).T[0]).sum()/len(P))
-            print(f" Precision: {prec*100:.02f}%")
-        elif config["eval"] == "mae":
-            err = abs(OS - P.T[0]).sum()/len(P) 
-            print(f" Average error: {err:.02f}")
-        for layer in activation:
-            # in case of LSTM, it is a tuple
-            # output is the first element
-            if type(activation[layer]) == tuple: activation[layer] = activation[layer][0]
-            if config["aggregation"] == "flatten": acts = torch.flatten(activation[layer], start_dim=1).to(device)
-            elif config["aggregation"] == "mean":
-                if len(activation[layer].shape) > 2:
-                    acts = torch.mean(activation[layer], dim=1).to(device)
-                else: acts = activation[layer].to(device)
-            else: 
-                print("unknown aggregation, check config")
-                sys.exit(-1)
-            if layer not in mm:
-                mm[layer] = {
-                    "min": acts.min(dim=0).values.to(device),
-                    "max": acts.max(dim=0).values.to(device)
-                    }
-            # normalisation based on min/max of first dataset
-            acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
-            if layer not in SOMs: 
-                print("      *** creating", layer)
-                perm = torch.randperm(acts.size(0))
-                samples = acts[perm[-(som_size[0]*som_size[1]):]]
-                SOMs[layer] = SOM(som_size[0], 
+    SOMevs = {}
+    with torch.no_grad(): # SOM training does not require gradients
+     for ep in range(1, config["nepochs"]+1):
+        count=0
+        sev  = 0
+        for X, y in data_loader:
+            X = X.to(device)
+            y = y.to(device)
+            # print("   ** applying model")
+            u.activation = {}
+            p = model(X)
+            if config["eval"] == "precision":
+                sev += 1-(abs(y - (p>=0.5).to(torch.int).T[0]).sum()/len(p))
+            elif config["eval"] == "mae":
+                sev += abs(y - p.T[0]).sum()/len(p) 
+            elif config["eval"] == "mse":
+                sev += ((y - p.T[0])**2).sum()/len(p) 
+            count+=1
+            for layer in u.activation:
+                # in case of LSTM, it is a tuple
+                # output is the first element
+                if type(u.activation[layer]) == tuple: u.activation[layer] = u.activation[layer][0]
+                if config["aggregation"] == "flatten": acts = torch.flatten(u.activation[layer], start_dim=1).to(device)
+                elif config["aggregation"] == "mean":
+                    if len(u.activation[layer].shape) > 2:
+                        acts = torch.mean(u.activation[layer], dim=1).to(device)
+                    else: acts = u.activation[layer].to(device)
+                else: 
+                    print("unknown aggregation, check config")
+                    sys.exit(-1)
+                # print("acts.shape", acts.shape)
+                if layer not in mm:
+                    mm[layer] = {
+                        "min": acts.min(dim=0).values.to(device),
+                        "max": acts.max(dim=0).values.to(device)
+                        }
+                # normalisation based on min/max of first dataset
+                acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
+                if layer not in SOMs: 
+                  print("   ** creating", layer)
+                  perm = torch.randperm(acts.size(0))
+                  samples = acts[perm[-(som_size[0]*som_size[1]):]]
+                  SOMs[layer] = SOM(som_size[0], 
                                   som_size[1], 
                                   acts.shape[1], 
                                   dist=cosine_distance,
@@ -113,13 +102,20 @@ if __name__ == "__main__":
                                   alpha_init=config["alpha"],
                                   neighborhood_fct=nb_linear, 
                                   alpha_drate=config["alpha_drate"])
-            print("   *** adding to SOM for",layer)
-            change,count = SOMs[layer].add(acts.to(device))
-            print(f"      {count}/{len(acts)} elements resulted in a change of {change}")
+                  SOMevs[layer] = {"change": 0.0, "count": 0}
+                change,count2 = SOMs[layer].add(acts.to(device))
+                SOMevs[layer]["change"] += change
+                SOMevs[layer]["count"] += count2
+                # NaNs happen quickly, from first relu layer.
+                # this is a trick... should be investigated why we get NaNs in the SOM
+                if torch.isnan(SOMs[layer].somap).any(): 
+                    print ("*** NaN!")
+                    SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
+        print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
+        for layer in SOMevs:
+            SOMevs[layer]["change"] /= count
+            SOMevs[layer]["count"] /= count
+            print(f"    {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
+            # save SOMs     
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
-            # NaNs happen quickly, from first relu layer.
-            # this is a trick... should be investigated why we get NaNs in the SOM
-            if torch.isnan(SOMs[layer].somap).any(): 
-                print ("*** NaN!")
-                SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
-        print("*** done ***")
+    
