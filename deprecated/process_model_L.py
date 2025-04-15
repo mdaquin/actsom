@@ -3,9 +3,9 @@ import sys, os
 import json
 from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 import numpy as np
-from custom_functions import visualize_neuron_activity_all, check_neuron, plot_training_errors
+from deprecated.custom_functions import visualize_neuron_activity_all, check_neuron, plot_training_errors
 import torch.nn.functional as F
-from sparce_autoencoder import SparseAutoencoder, train_SparseAE
+from deprecated.sparce_autoencoder import SparseAutoencoder, train_SparseAE
 from torch.utils.data import Dataset, DataLoader
 
 SEED = 43

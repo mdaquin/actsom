@@ -7,7 +7,5 @@ This repository contains tools to create self-organising maps (SOMs) for explori
   - test_concept computes metrics for each layer for a given concept.
   - view_freqs show the frequency map of a SOM, possibly with a concept
   - view_metrics display the metrics.
-  - view_sae.py displays the average, min and max activations of the encoding layer of the sparse autoencoder. If a concept is given, it distinguishes between data points in the concept and those out of it. (this part needs to be made more efficient, by adding the concept in the same file so we don't have to iterate and concatenate over it). A filter can be given to only show the units having a significant difference (percent diff of the average).
-  - find_concept_sae.py show the relation between concepts and encoding units in sae 
   
 The examples provided (painters and agenet) are a models based on predicting whether painters have paintings in significant museums from their bio, and on resent18 to predict the age of people from their picture, using the UTKFace dataset.
