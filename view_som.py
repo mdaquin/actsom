@@ -25,8 +25,7 @@ somap = som.somap.detach().cpu()
 if somap.isnan().any(): 
     print("SOM has nans...")
     sys.exit(-1)
-if somap.shape[1] == 1:
-    somap = somap.repeat(3, 3)
+if somap.shape[1] == 1: somap = somap.repeat(3, 3)
 pca = PCA(n_components=3, random_state=42)
 rsom = pca.fit_transform(somap)
 if torch.tensor(rsom).isnan().any(): 
@@ -89,24 +88,6 @@ import numpy as np
 
 matplotlib.use('TkAgg')
 
-parser = ArgumentParser(prog="view metrics", description="show computed metrics for a concept")
-parser.add_argument('csvfile')
-
-args = parser.parse_args()
-
-df = pd.read_csv(args.csvfile)
-df.replace([np.inf, -np.inf], np.nan, inplace=True)
-df = df.set_index("Unnamed: 0")
-df = df[(df.KS_p < 0.5) | (df.MW_p < 0.5)]
-df["MW"] = (df.MW - df.MW.min()) / (df.MW.max() - df.MW.min())
-ax = df[["KL", "KS", "MW"]].plot(figsize=(10, 6))
-ax.set_xticks(range(len(df)))
-plt.xticks(list(df.index), rotation=45)
-plt.show()
-ax = df[["MW_p", "KS_p"]].plot()
-ax.set_xticks(range(len(df)))
-plt.xticks(list(df.index), rotation=45)
-plt.show()
 if not hl: 
   while True:
      for event in pygame.event.get():

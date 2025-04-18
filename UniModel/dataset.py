@@ -24,7 +24,7 @@ class UniDataset:
         text = self.tokenizer.encode(text).ids
         text = torch.tensor(text, dtype=torch.long)
         if self.test is False:
-            label = self.labels[idx] / 5.
+            label = self.labels[idx]
             label = torch.tensor(label, dtype=torch.float32)
             return text, label
         return text

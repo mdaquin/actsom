@@ -14,7 +14,7 @@ class UniDataset:
         self.test = test
         self.texts = list(df['Description'].values)
         if self.test is False: self.labels = torch.tensor(df.scores_overall.values)
-        self.labels = torch.nn.functional.one_hot(self.labels.to(torch.long), num_classes=3).float() # needs to go in the dataset
+        self.labels = torch.nn.functional.one_hot(self.labels.to(torch.long), num_classes=3).float() 
         self.tokenizer = tokenizer
     def __len__(self):
         return len(self.texts)
@@ -70,6 +70,6 @@ def load_dataset(VOCAB_SIZE, split=False, SEED=42, retquantile=False):
         df2.loc[(df.scores_overall > q1) & (df.scores_overall <= q2), 'scores_overall'] = 1
         df2.loc[df.scores_overall > q2, 'scores_overall'] = 2
 
-        ds = UniDataset(df, tokenizer)
+        ds = UniDataset(df2, tokenizer)
         if retquantile: return ds, q1, q2
         else: return ds

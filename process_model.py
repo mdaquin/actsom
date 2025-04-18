@@ -12,13 +12,14 @@ if __name__ == "__main__":
     else: conf = sys.argv[1]
 
     # base config
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if device == torch.device("cuda"): print("USING GPU")
     config = json.load(open(conf))
     torch.manual_seed(config["seed"])
     som_size = config["som_size"]
     base_som_dir = config["somdir"]
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if "runcpu" in config: device = torch.device("cpu")
+    if device == torch.device("cuda"): print("USING GPU")
+       
     with torch.no_grad():
      print("Loading model...")   
      # exec(open(config["modelclass"]).read())
@@ -58,7 +59,12 @@ if __name__ == "__main__":
             u.activation = {}
             p = model(X)
             if config["eval"] == "precision":
-                sev += 1-(abs(y - (p>=0.5).to(torch.int).T[0]).sum()/len(p))
+                # multiclass
+                if len(y.shape) > 1:
+                    y = torch.argmax(y, dim=1)
+                    p = torch.argmax(p, dim=1)
+                    sev += (y==p).sum()/len(p)
+                else: sev += 1-(abs(y - (p>=0.5).to(torch.int).T[0]).sum()/len(p))
             elif config["eval"] == "mae":
                 sev += abs(y - p.T[0]).sum()/len(p) 
             elif config["eval"] == "mse":
