@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
 import numpy as np
 import pandas as pd
-import json, sys, pygame, time
+import json, sys, pygame, time, torch
+import importlib as imp
+import utils as u
 
 parser = ArgumentParser(prog="view freq", description="visualiser for frequency maps created through ActSOM")
 parser.add_argument('configfile')
@@ -10,34 +12,67 @@ parser.add_argument('-o', '--output') # output image file
 parser.add_argument('-n', '--num', action='store_true')
 parser.add_argument('-ss', '--screensize', type=int, default=500)
 parser.add_argument('-hl', '--headless', action='store_true', default=False)
-parser.add_argument('-c', '--concept')
 
 args = parser.parse_args()
-
 config = json.load(open(args.configfile))
 
-print("opening", config["som_results_file"])
+torch.manual_seed(config["seed"])
+som_size = config["som_size"]
+base_som_dir = config["somdir"]
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if "runcpu" in config: device = torch.device("cpu")
+if device == torch.device("cuda"): print("USING GPU")
 
-df = pd.read_csv(config["som_results_file"])
-vc = df[args.layer].value_counts()
-fmap = np.zeros(tuple(config["som_size"]))
-for i in vc.index: 
-    fmap[i//fmap.shape[0], i%fmap.shape[0]] = vc[i]
+with torch.no_grad():
+    print("Loading model...")   
+    # exec(open(config["modelclass"]).read())
+    spec = imp.util.spec_from_file_location(config["modelmodulename"], config["modelclass"])
+    module = imp.util.module_from_spec(spec)
+    sys.modules[config["modelmodulename"]] = module
+    spec.loader.exec_module(module)
+    model = u.load_model(config["model"], device=device)
+    model.eval()
+
+print("Setting up activation hooks...")
+u.activation = {}
+list_layers = u.set_up_activations(model)
+
+print("Loading dataset...")
+spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
+module = imp.util.module_from_spec(spec)
+sys.modules[config["datasetmodulename"]] = module
+spec.loader.exec_module(module)
+exec("import "+config["datasetmodulename"])
+data = eval(config["datasetcode"])
+data_loader = torch.utils.data.DataLoader(data, batch_size=config["batchsize"], shuffle=True)
+
+print("Loading SOM for layer", args.layer)
+som = torch.load(config["somdir"]+"/"+args.layer+".pt", weights_only=False)
+
+print("Applying model and SOM")
+fmap = np.zeros(tuple(config["som_size"]), dtype=np.float32)
+fmap[:] = 0
+with torch.no_grad():
+    for input, target in data_loader:
+        u.activation = {}
+        input = input.to(device)
+        p = model(input)
+        acts = u.activation[args.layer]
+        if type(acts) == tuple: acts = acts[0]
+        if config["aggregation"] == "flatten": 
+            acts = torch.flatten(acts, start_dim=1).to(device)
+        elif config["aggregation"] == "mean":
+                    if len(acts.shape) > 2:
+                        acts = torch.mean(acts, dim=1).to(device)
+                    else: acts = acts.to(device)
+        else: 
+            print("unknown aggregation, check config")
+            sys.exit(-1)
+        acts = (acts-som.minval)/(som.maxval-som.minval) # we don't do this for SAE combination...
+        res = som(acts)
+        for bmu in res[0]:
+            fmap[bmu[0].item(), bmu[1].item()] += 1
 fmap = fmap/fmap.sum()
-
-cmap = None
-if "concept" in args and args.concept is not None: 
-    column = args.concept.split(":")[0]
-    value = args.concept.split(":")[1]
-    print(f"looking at {column} with value {value}")
-    if type(df[column].iloc[0]) == str: 
-        rdf = df[df.apply(lambda x: value.lower() in str(x[column]).lower(), axis=1)]
-    else: rdf = df[df[column] == float(value)]
-    vc = rdf[args.layer].value_counts()
-    cmap = np.zeros(tuple(config["som_size"]))
-    for i in vc.index: 
-        cmap[i//cmap.shape[0], i%cmap.shape[0]] = vc[i]
-    cmap = cmap/cmap.sum()
 
 screen_size=args.screensize # size of screen 
 hl = "headless" in args and args.headless
@@ -48,7 +83,7 @@ if not hl:
     pygame.init()
     pygame.display.set_caption("frequencies for "+args.layer)
 
-def display(fmap, som_size, cmap=None, hl=False, output=None):
+def display(fmap, som_size, hl=False, output=None):
     if not hl:
       for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -62,9 +97,6 @@ def display(fmap, som_size, cmap=None, hl=False, output=None):
             ncs = (cs-fmap.min())/(fmap.max()-fmap.min())
             gb = max(min(255, int(ncs*255)), 0)
             r = max(min(255, int(ncs*255)), 0)
-            if cmap is not None:
-                ncs = (cmap[i,j]-cmap.min())/(cmap.max()-cmap.min())
-                r = max(min(255, int(ncs*255)), 0)
             color = (r,gb,gb)
             pygame.draw.rect(surface,
                          color,
@@ -82,7 +114,7 @@ def display(fmap, som_size, cmap=None, hl=False, output=None):
 
 output = None
 if "output" in args : output = args.output
-display(fmap, fmap.shape[0], cmap=cmap, hl=hl, output=output)
+display(fmap, fmap.shape[0], hl=hl, output=output)
 
 if not hl: 
   while True:
