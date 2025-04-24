@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 import numpy as np
-import pandas as pd
 import json, sys, pygame, time, torch
 import importlib as imp
 import utils as u

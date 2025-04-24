@@ -69,3 +69,27 @@ def set_up_activations(model):
         return llayers
     return rec_reg_hook(model)
     
+
+def get_module_by_name(model, name):
+    parts = name.split('.')
+    mod = model
+    for p in parts:
+        if p.isdigit():
+            mod = mod[int(p)]  
+        else:
+            mod = getattr(mod, p)
+    return mod
+
+def set_module_by_name(model, name, new_module):
+    parts = name.split('.')
+    mod = model
+    for p in parts[:-1]:
+        if p.isdigit():
+            mod = mod[int(p)]
+        else:
+            mod = getattr(mod, p)
+    last = parts[-1]
+    if last.isdigit():
+        mod[int(last)] = new_module
+    else:
+        setattr(mod, last, new_module)
