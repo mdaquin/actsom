@@ -1,15 +1,18 @@
 {
+    "seed": 42, 
+    "modelclass": "painters/model.py", 
+    "modelmodulename": "model",
     "model": "painters/model.pt",
-    "modelclass": "painters/model.py",
-    "dataset_dir": "painters/dataset/",
-    "aggregation" : "mean",
-    "som_size": [5,5],
-    "base_som_dir": "painters/base_soms/",
-    "base_sae_dir": "painters/base_spe/",
-    "inputisint": 1, 
+    "datasetclass": "painters/dataset.py",
+    "datasetmodulename": "dataset",
+    "datasetcode": "dataset.load_dataset(3000, split=False, SEED=42)",
+    "som_size": [5, 5],
+    "aggregation": "mean",
+    "batchsize": 256,
+    "nepochs": 10, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,
-    "eval": "precision", 
-    "som_results_file": "painters/results.csv", 
-    "sae_results_dir": "painters/sae_results/"
-}
+    "eval": "precision",
+    "somdir": "painters/soms", 
+    "runcpu": 1
+  }
