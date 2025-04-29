@@ -6,7 +6,7 @@
     "datasetclass": "painters/dataset.py",
     "datasetmodulename": "dataset",
     "datasetcode": "dataset.load_dataset(3000, split=False, SEED=42)",
-    "som_size": [5, 5],
+    "som_size": [4, 4],
     "aggregation": "mean",
     "batchsize": 256,
     "nepochs": 10, 
@@ -14,5 +14,6 @@
     "alpha_drate": 1e-6,
     "eval": "precision",
     "somdir": "painters/soms", 
-    "runcpu": 1
+    "runcpu": 1, 
+    "Nacts": 20
   }
