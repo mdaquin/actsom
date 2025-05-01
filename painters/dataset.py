@@ -9,9 +9,11 @@ from tokenizers.trainers import BpeTrainer
 from sklearn.model_selection import train_test_split
 
 class PainterDataset:
-    def __init__(self, df, tokenizer, test=False):
+    def __init__(self, df, tokenizer, test=False, incuri=False):
         self.test = test
         self.texts = list(df['desc'].values)
+        self.uris = None
+        if incuri: self.uris = list(df.index)
         if self.test is False: self.labels = torch.tensor(df.inmuseum.values)
         self.tokenizer = tokenizer
     def __len__(self): return len(self.texts)
@@ -22,10 +24,16 @@ class PainterDataset:
         text = torch.tensor(text, dtype=torch.long)
         if self.test is False:
               label = self.labels[idx]
+              if self.uris is not None:
+                    uri = self.uris[idx]
+                    return text, label, uri
               return text, label
+        if self.uris is not None:
+              uri = self.uris[idx]
+              return text, uri
         return text
 
-def load_dataset(VOCAB_SIZE, split=False, SEED=42):
+def load_dataset(VOCAB_SIZE, split=False, SEED=42, incuri=False):
     print("*"*6,"loading json","*"*6)
     df = pd.read_json("painters/allpainters.json").T
     df["nbmuseum"] = df.nbmuseum.apply(lambda x: int(x))
@@ -46,7 +54,7 @@ def load_dataset(VOCAB_SIZE, split=False, SEED=42):
     torch.save(tokenizer, "tokenizer.pkl")
 
     if split:
-        train_df, val_df = train_test_split(df, test_size=0.2,  shuffle=True, random_state = SEED)
+        train_df, val_df = train_test_split(df, test_size=0.2,  shuffle=True, random_state = SEED, incuri=incuri)
         train_df = train_df.reset_index(drop=True)
         val_df = val_df.reset_index(drop=True)
 
@@ -54,6 +62,6 @@ def load_dataset(VOCAB_SIZE, split=False, SEED=42):
         val_ds = PainterDataset(val_df, tokenizer)
         return train_ds, val_ds
     else:
-        ds = PainterDataset(df, tokenizer)
+        ds = PainterDataset(df, tokenizer, incuri=incuri)
         return ds
 
