@@ -14,6 +14,5 @@
     "alpha_drate": 1e-6,
     "eval": "precision",
     "somdir": "painters/soms", 
-    "runcpu": 1, 
     "Nacts": 20
   }

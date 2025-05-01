@@ -42,7 +42,7 @@ def load_dataset(VOCAB_SIZE, split=False, SEED=42, incuri=False):
     print("*"*6,"balancing","*"*6)
     dfp=df[df.inmuseum==1.0]
     dfn=df[df.inmuseum==0.0].sample(len(dfp), random_state=SEED)
-    df=pd.concat([dfp,dfn]).sample(frac=1)
+    df=pd.concat([dfp,dfn]).sample(frac=1, random_state=SEED)
     df=df.drop("nbmuseum", axis=1)
 
     tokenizer = Tokenizer(BPE(unk_token='[UNK]'))
