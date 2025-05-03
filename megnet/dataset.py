@@ -56,6 +56,7 @@ def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[floa
         collate_fn=collate_fn_graph,
         batch_size=256,
         num_workers=0,
+        shuffle=False
     )
     return train_loader, val_loader, test_loader
 

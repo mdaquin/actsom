@@ -24,6 +24,7 @@ if __name__ == "__main__":
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
        
+    ### special megnet
     with torch.no_grad():
         model = matgl.load_model("megnet/model")
         lit_module = ModelLightningModule(model)
@@ -34,6 +35,7 @@ if __name__ == "__main__":
     sys.modules[config["datasetmodulename"]] = module
     spec.loader.exec_module(module)
     exec("import "+config["datasetmodulename"])
+    #### special megnet
     loader1, loader2, loader3 = eval(config["datasetcode"])
    
     print("Setting up activation hooks...")
@@ -53,7 +55,7 @@ if __name__ == "__main__":
      for ep in range(1, config["nepochs"]+1):
         count=0
         sev  = 0
-        for loader in [loader1]: #, loader2, loader3:
+        for loader in [loader1, loader2, loader3]:
             u.activation = {}
             trainer.test(lit_module, dataloaders=loader)
         
