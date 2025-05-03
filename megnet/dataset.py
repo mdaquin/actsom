@@ -284,6 +284,11 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
             eform_per_atom = pickle.load(f)
         for i, struct in enumerate(structures):
             struct.mpid = mp_ids[i]  
+        for i, label in enumerate(eform_per_atom):
+            eform_per_atom[i] = float(i)
+        print(len(eform_per_atom))
+        print(len(mp_ids))
+        
     else:
         data = pd.read_json("megnet/data/mp.2018.6.1.json")
         structures = []
@@ -303,8 +308,8 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
     elem_list = get_element_list(structures)
     converter = Structure2Graph(element_types=elem_list, cutoff=4.0)
     mp_dataset = MGLDataset(
-        structures=structures,
-        labels={"Eform": eform_per_atom, "mpids": mp_ids},
+        structures=structures[:100],
+        labels={"Eform": eform_per_atom[:100], "mpids": mp_ids[:100]},
         converter=converter
     )
     print(mp_dataset[0])
@@ -315,7 +320,7 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
         shuffle=shuffle,
         random_state=42,
     )
-
+    print(train_data[0])
     train_loader, val_loader, test_loader = MGLDataLoader(
         train_data=train_data,
         val_data=val_data,
