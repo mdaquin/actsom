@@ -53,13 +53,13 @@ if __name__ == "__main__":
      for ep in range(1, config["nepochs"]+1):
         count=0
         sev  = 0
-        for loader in loader1, loader2, loader3:
+        for loader in [loader1]: #, loader2, loader3:
             u.activation = {}
             trainer.test(lit_module, dataloaders=loader)
         
             for layer in u.activation:
                 if type(u.activation[layer]) == tuple: u.activation[layer] = u.activation[layer][0]
-                print(u.activation[layer].shape)
+                # print(u.activation[layer].shape)
                 # dealing with MegNet weird activation shapes
                 if len(u.activation[layer].shape) < 2: continue
                 if config["aggregation"] == "flatten": acts = torch.flatten(u.activation[layer], start_dim=1).to(device)
@@ -116,11 +116,12 @@ if __name__ == "__main__":
                 if torch.isnan(SOMs[layer].somap).any(): 
                     print ("*** NaN!")
                     SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
-        print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
+                count+=1
+        #print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
         for layer in SOMevs:
             SOMevs[layer]["change"] /= count
             SOMevs[layer]["count"] /= count
-            print(f"    {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
+            print(f"  - {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
             # save SOMs     
             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
     
