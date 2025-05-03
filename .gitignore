@@ -39,3 +39,5 @@ entcache/*
 MGLDataset/*
 megnet/data/*
 megnet/model/*
+
+lightning_logs/*
