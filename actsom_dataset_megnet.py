@@ -103,7 +103,10 @@ with torch.no_grad():
     # store orig activations
     if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
     # for all in loader... 
-
+    for bi, b in enumerate(loader):
+          for k, struct in enumerate(b):
+                # print all attributes of struct
+                print(struct)
     # for j,v in enumerate(acts[k]):
     #       insert(i, float(v), oacts[j], config["Nacts"])
     # if i%100 == 0: print(".", end="")
