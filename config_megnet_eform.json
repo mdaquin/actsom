@@ -8,7 +8,7 @@
     "datasetcode": "dataset.load_dataset()",
     "som_size": [5, 5],
     "aggregation": "mean",
-    "batchsize": 64,
+    "batchsize": 26,
     "nepochs": 3, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,

@@ -118,7 +118,9 @@ if __name__ == "__main__":
                         }
                 # normalisation based on min/max of first dataset
                 if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
-                    if layer in SOMs: del SOMs[layer]
+                    #if layer in SOMs: 
+                        #print("*** dropping SOM", layer)
+                        #del SOMs[layer]
                     continue                
                 print("*** progressing with", layer)
                 acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
