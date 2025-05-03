@@ -45,7 +45,7 @@ def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[floa
     )
     train_data, val_data, test_data = split_dataset(
         mp_dataset,
-        frac_list=[0.98, 0.01, 0.01],
+        frac_list=[0.1, 0.4, 0.5],
         shuffle=True,
         random_state=42,
     )
@@ -57,13 +57,13 @@ def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[floa
         batch_size=256,
         num_workers=0,
     )
-    return train_loader
+    return train_loader, val_loader, test_loader
 
 if __name__ == "__main__":
     print("*** loading model")
     model = matgl.load_model("megnet/model")
     lit_module = ModelLightningModule(model=model)
     print("*** loading dataset")
-    loader = load_dataset(ret_mpids=True)
+    loader1, loader2, loader3 = load_dataset(ret_mpids=False)
     trainer = pl.Trainer(accelerator="cpu")
-    trainer.test(lit_module, dataloaders=loader)
+    trainer.test(lit_module, dataloaders=loader1)
