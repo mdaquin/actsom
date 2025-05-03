@@ -43,26 +43,18 @@ def load_dataset() -> tuple[list[Structure], list[str], list[float]]:
 print("*** Loading dataset")
 structures, mp_ids, eform_per_atom = load_dataset()
 
-print("*** getting element list")
-elem_list = get_element_list(structures)
+# print("*** getting element list")
+# elem_list = get_element_list(structures)
 
-print("*** setting up graph converter")
-converter = Structure2Graph(element_types=elem_list, cutoff=4.0)
+# print("*** setting up graph converter")
+# converter = Structure2Graph(element_types=elem_list, cutoff=4.0)
 
-print("*** create the megnet dataset")
-mp_dataset = MGLDataset(
-    structures=structures,
-    labels={"Eform": eform_per_atom},
-    converter=converter,
-)
+# print("*** create the megnet dataset")
+# mp_dataset = MGLDataset(
+#     structures=structures,
+#     labels={"Eform": eform_per_atom},
+#     converter=converter,
+# )
 
-
-
-for data in mp_dataset:
-    print("***", data[0])
-    print("***", data[1])
-    print("***", data[2])
-    print("***", data[3])
-    res = model(data[0])
-    print("***", res)
-    break
+res=model.predict_structure(structures[0])
+print(res, eform_per_atom[0])
