@@ -27,7 +27,9 @@ if __name__ == "__main__":
      module = imp.util.module_from_spec(spec)
      sys.modules[config["modelmodulename"]] = module
      spec.loader.exec_module(module)
-     model = u.load_model(config["model"], device=device)
+     exec("import "+config["modelmodulename"])
+     if "model" in config: model = u.load_model(config["model"], device=device)
+     else: model = eval(config["modelcode"]) 
      model.eval()
 
     print("Loading dataset...")

@@ -5,6 +5,7 @@ from pymatgen.core import Structure
 from tqdm import tqdm
 import pandas as pd 
 import os
+import torch
 
 class MGNetDataset:
     def __init__(self, structures, mp_ids, labels, return_mpids=False):
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     model = matgl.load_model("megnet/model")
     print("*** loading dataset")
     dataset = load_dataset(ret_mpids=True)
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
     idx = random.randint(0, len(dataset)-1)
     res=model.predict_structure(dataset[idx][0])
     print(float(res), dataset[idx][1])

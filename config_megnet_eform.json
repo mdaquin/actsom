@@ -1,8 +1,8 @@
 {
     "seed": 42, 
     "modelclass": "megnet/model.py", 
-    "modelmodulename": "model",
-    "modelcode": "model.load_model()",
+    "modelmodulename": "modelpy",
+    "modelcode": "modelpy.load_model()",
     "datasetclass": "megnet/dataset.py",
     "datasetmodulename": "dataset",
     "datasetcode": "dataset.load_dataset()",
