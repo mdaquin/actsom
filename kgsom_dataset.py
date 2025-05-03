@@ -12,9 +12,16 @@ class Cache:
     def get(self, key):
         if os.path.exists(self.path+"/"+str(key)+".json"):
             with open(self.path+"/"+str(key)+".json") as f:
-                return json.load(f)
+                data = json.load(f)
+                if len(data)==0: 
+                    print("** empty cache for", key)
+                    return None
+                print("** got from cache", key)
+                return data
+        print("** no cache for", key)
         return None
     def set(self, key, value):
+        print("** Caching", key)
         with open(self.path+"/"+str(key)+".json", "w") as f:
             json.dump(value, f)
 
@@ -23,9 +30,9 @@ def dealWithNumerical(df):
         for i,v in enumerate(df[col]):
             if type(v) == list and len(v) > 0:
                 if type(v[0]) != str:
-                    print(col, i, v)
+                    print("##", col, i, v)
                 elif v[0].replace('.','',1).isdigit():
-                    print(col, i, v)
+                    print("##.##", col, i, v)
     return df
 
 parser = ArgumentParser(prog="view freq", description="visualiser for frequency maps created through ActSOM")
@@ -77,8 +84,11 @@ for ci,cell in enumerate(ds):
     df = dealWithNumerical(df) # forget it for now, there is none...
     # multi-value columns should be exploded
     for col in df.columns:
-        if type(df[col][0]) == list:
+        nna = df[col].dropna()
+        if len(nna) > 0  and type(nna.iloc[0]) == list:
             one_hot = pd.get_dummies(df[col].apply(pd.Series).stack(), prefix=col, prefix_sep="::").groupby(level=0).sum()
             df = df.drop(col, axis=1).join(one_hot, how='left')
+        else:
+            if col != "target": print("***", col, "not exploded")
     df = df.fillna(0) # not ideal if we had numerical stull, but...
     df.to_csv(config["actsomDSDir"]+"/"+layer+"_"+str(ci)+".csv", index=False)

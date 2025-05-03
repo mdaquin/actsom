@@ -33,3 +33,7 @@ nohup.out
 
 */UniModel/soms/*
 */UniModel_classif/soms/*
+
+entcache/*
+
+MGLDataset/*

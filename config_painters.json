@@ -14,11 +14,13 @@
     "alpha_drate": 1e-6,
     "eval": "precision",
     "somdir": "painters/soms", 
-    "Nacts": 20, 
+    "Nacts": 40, 
     "ldcache": "painters/ldcache", 
     "ldinfoscript": "painters/LD_info.py",
     "ldinfomodulename": "LD_info",
     "ldinfocode": "LD_info.get_ld_info([[IDX]], 3)",
     "actsomDSDir": "painters/actsomds", 
-    "DTmodelsdir": "painters/dtmodels"
+    "DTmodelsdir": "painters/dtmodels", 
+    "actsomPDSdir": "painters/actsom_datasets",
+    "actsPDSdir": "painters/activation_datasets"
   }

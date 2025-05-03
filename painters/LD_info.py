@@ -1,5 +1,9 @@
+import hashlib
+import pickle
+import urllib
 from painters.dataset import load_dataset
 from rdflib import Graph, URIRef, Literal
+import time, os
 
 def get_fragment(u):
     if isinstance(u, Literal): return u.value
@@ -11,12 +15,57 @@ toignore = ["sameAs", "isPrimaryTopicOf", "prefLabel", "wikiPageID", "wikiPageUs
 def filter(p):
     return p in toignore
 
-cache={}
-def get_from_cache(uri):
-    if uri in cache: return cache[uri]
-    return None
-def set_cache(uri, data):
-    cache[uri] = data
+class Cache:
+    def __init__(self, path):
+        self.path = path
+    def get(self, k):
+        key = hashlib.sha1(str(k).encode("utf-8")).hexdigest()
+        if os.path.exists(self.path+"/"+str(key)+".pkl"):
+            with open(self.path+"/"+str(key)+".pkl", "rb") as f:
+                data = pickle.load(f)
+                if len(data)==0: 
+                    print(" 0")
+                    return None
+                print(" *")
+                return data
+        print(" -")
+        return None
+    def set(self, key, value):
+        # print("** Caching", key)
+        key = hashlib.sha1(str(key).encode("utf-8")).hexdigest()
+        with open(self.path+"/"+str(key)+".pkl", "wb") as f:
+            pickle.dump(value, f)
+
+cache=Cache("entcache")
+# def get_from_cache(uri):
+#     if uri in cache: return cache[uri]
+#     return None
+# def set_cache(uri, data):
+#     cache[uri] = data
+
+def getURI(uri, ret=0):
+    g = Graph()
+    try:
+        g.parse(uri)
+        cache.set(uri, g)
+    except Exception as e:
+        print("Error parsing URI:", uri)
+        print(e)
+        print("trying describe query")
+        try:
+            # urlencode the uri 
+            euri = urllib.parse.quote(uri, safe='')
+            print("https://dbpedia.org/sparql?query=DESCRIBE+<"+euri+">")
+            g.parse("https://dbpedia.org/sparql?query=DESCRIBE+<"+euri+">", format="turtle")
+            cache.set(uri, g)
+        except Exception as e:
+            print("Error parsing URI with DESCRIBE query:", uri)
+            print(e)
+            if ret >= 10: return g
+            time.sleep(30)
+            print("Retrying...")
+            return getURI(uri, ret+1)
+    return g
 
 def get_ld_info(idx, nb, isuri=False):
     if not isuri:
@@ -24,16 +73,10 @@ def get_ld_info(idx, nb, isuri=False):
         item = ds[idx]
         uri = item[2]
     else: uri = idx
-    print(uri)
-    g = get_from_cache(uri)
+    print(uri, end=" ")
+    g = cache.get(uri)
     if g is None:
-      g = Graph()
-      try:
-        g.parse(uri)
-        set_cache(uri, g)
-      except:
-        print("Error parsing URI:", uri)
-        return {}
+      g = getURI(uri)
     ret = {}
     for s, p, o in g.triples((URIRef(uri), None, None)):
         p = get_fragment(p)

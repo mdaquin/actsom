@@ -7,10 +7,11 @@ import utils as u
 parser = ArgumentParser(prog="Activation datasets", description="Create subset of high and low activations for cells of a SOM")
 parser.add_argument('configfile')
 parser.add_argument('layer')
-parser.add_argument('-o', '--output') # output json file
 
 args = parser.parse_args()
 config = json.load(open(args.configfile))
+actsom_dir = config["actsomPDSdir"]
+acts_dir = config["actsPDSdir"]
 
 torch.manual_seed(config["seed"])
 som_size = config["som_size"]
@@ -50,7 +51,7 @@ data = eval(config["datasetcode"])
 def insert(rank, value, tables, n):
     found=False
     for i in range(len(tables["hc"])):
-        if v > tables["ha"][i]:
+        if value > tables["ha"][i]:
               # insert v in the tables["ha"] list at rank i
               tables["hc"].insert(i, rank)
               tables["ha"].insert(i, value)
@@ -63,7 +64,7 @@ def insert(rank, value, tables, n):
     tables["ha"] = tables["ha"][:n]
     found=False
     for i in range(len(tables["lc"])):
-        if v < tables["la"][i]:
+        if value < tables["la"][i]:
               # insert v in the tables["la"] list at rank i
               tables["lc"].insert(i, rank)
               tables["la"].insert(i, value)
@@ -76,6 +77,7 @@ def insert(rank, value, tables, n):
     tables["la"] = tables["la"][:n]
  
 result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(som_size[0]*som_size[1])]
+oacts = None
 print("Iterating over dataset")
 # this would be more efficient with batching 
 with torch.no_grad():
@@ -95,13 +97,21 @@ with torch.no_grad():
             print("unknown aggregation, check config")
             sys.exit(-1)
     acts = (acts-som.minval)/(som.maxval-som.minval) # we don't do this for SAE combination...
+    # store orig activations
+    if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
+    for j,v in enumerate(acts[0]):
+          insert(i, float(v), oacts[j], config["Nacts"])
+    if i%100 == 0: print(".", end="")
     res = som(acts)
     for j,v in enumerate(res[1]):
           insert(i, float(v), result[j], config["Nacts"])
     if i%100 == 0: print(".", end="")
 print()
 
+print(oacts)
+with open(acts_dir+"/"+layer+".json", "w") as f:
+    json.dump(oacts, f)
+
 print(result)
-if "output" in args:
-    with open(args.output, "w") as f:
-        json.dump(result, f)
+with open(actsom_dir+"/"+layer+".json", "w") as f:
+    json.dump(result, f)

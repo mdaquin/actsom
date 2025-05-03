@@ -15,6 +15,7 @@ dtmoddir = config["DTmodelsdir"]
 dsdirs = config["actsomDSDir"]
 results = {}
 for f in os.listdir(dsdirs):
+    print(f)
     df = pd.read_csv(dsdirs+"/"+f)
     # train a decision tree on the data
     X = df.drop(columns=["target"])
