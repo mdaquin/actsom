@@ -38,3 +38,4 @@ entcache/*
 
 MGLDataset/*
 megnet/data/*
+megnet/model/*

@@ -1,10 +1,16 @@
 import pickle
+import sys
 from matgl.ext.pymatgen import Structure2Graph, get_element_list
 from matgl.graph.data import MGLDataLoader, MGLDataset, collate_fn_graph
+import matgl
 from pymatgen.core import Structure
 from tqdm import tqdm
 import pandas as pd 
 import os
+import torch
+
+print("*** loading model")
+model = matgl.load_model("megnet/model")
 
 # define a function to load the dataset
 def load_dataset() -> tuple[list[Structure], list[str], list[float]]:
@@ -50,6 +56,13 @@ mp_dataset = MGLDataset(
     converter=converter,
 )
 
+
+
 for data in mp_dataset:
-    print(data)
+    print("***", data[0])
+    print("***", data[1])
+    print("***", data[2])
+    print("***", data[3])
+    res = model(data[0])
+    print("***", res)
     break
