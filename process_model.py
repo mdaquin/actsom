@@ -1,8 +1,22 @@
+import math
 import pandas as panda
 import torch, sys, os, json
 from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
 import importlib as imp
 import utils as u
+
+
+class SpecialDataLoader:
+
+    def __init__(self, data, batch_size=32):
+        self.data = data
+        self.batch_size = batch_size
+    
+    def __len__(self):
+        return math.ceiling(len(self.data)/self.batch_size)
+    
+    def __getitem__(self, idx):
+        return self.data[idx*self.batch_size:(idx+1)*self.batch_size]
 
 if __name__ == "__main__":
 
@@ -17,7 +31,8 @@ if __name__ == "__main__":
     som_size = config["som_size"]
     base_som_dir = config["somdir"]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if "runcpu" in config: device = torch.device("cpu")
+    runcpu = "runcpu" in config and config["runcpu"]
+    if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
        
     with torch.no_grad():
@@ -39,7 +54,11 @@ if __name__ == "__main__":
     spec.loader.exec_module(module)
     exec("import "+config["datasetmodulename"])
     data = eval(config["datasetcode"])
-    data_loader = torch.utils.data.DataLoader(data, batch_size=config["batchsize"], shuffle=True)
+    special_dataloader = "specialdataloader" in config and config["specialdataloader"]
+    if not special_dataloader:
+        data_loader = torch.utils.data.DataLoader(data, batch_size=config["batchsize"], shuffle=True)
+    else: 
+        data_loader=SpecialDataLoader(data, batch_size=config["batchsize"])
 
     print("Setting up activation hooks...")
     u.activation = {}
@@ -55,8 +74,8 @@ if __name__ == "__main__":
         count=0
         sev  = 0
         for X, y in data_loader:
-            X = X.to(device)
-            y = y.to(device)
+            if not runcpu: X = X.to(device)
+            if not runcpu: y = y.to(device)
             # print("   ** applying model")
             u.activation = {}
             p = model(X)

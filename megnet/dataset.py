@@ -23,7 +23,7 @@ class MGNetDataset:
         if self.return_mpids:
             mp_id = self.mp_ids[idx]
             return structure, label, mp_id
-        return structure, label
+        return structure, torch.tensor(label)
 
 def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[float]]:
     if os.path.exists("megnet/data/mp.2018.6.1_structures.pkl"):

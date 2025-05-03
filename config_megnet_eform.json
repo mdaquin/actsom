@@ -23,5 +23,6 @@
     "DTmodelsdir": "megnet/dtmodels", 
     "actsomPDSdir": "megnet/actsom_datasets",
     "actsPDSdir": "megnet/activation_datasets", 
-    "dataset_is_dataloader": true
+    "specialdataloader": true, 
+    "runcpu": true
   }
