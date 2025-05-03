@@ -95,6 +95,12 @@ if __name__ == "__main__":
                 # in case of LSTM, it is a tuple
                 # output is the first element
                 if type(u.activation[layer]) == tuple: u.activation[layer] = u.activation[layer][0]
+                # dealing with MegNet weird activation shapes
+                if len(u.activation[layer].shape) < 2: continue
+                if not u.activation[layer].shape[0] == config["batchsize"]:
+                    if u.activation[layer].shape[1] == config["batchsize"]:
+                        u.activation[layer] = u.activation[layer].T
+                    else: continue
                 if config["aggregation"] == "flatten": acts = torch.flatten(u.activation[layer], start_dim=1).to(device)
                 elif config["aggregation"] == "mean":
                     if len(u.activation[layer].shape) > 2:
@@ -103,6 +109,7 @@ if __name__ == "__main__":
                 else: 
                     print("unknown aggregation, check config")
                     sys.exit(-1)
+                if acts.shape[1] < 10: continue
                 # print("acts.shape", acts.shape)
                 if layer not in mm:
                     mm[layer] = {
@@ -110,8 +117,12 @@ if __name__ == "__main__":
                         "max": acts.max(dim=0).values.to(device)
                         }
                 # normalisation based on min/max of first dataset
+                if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
+                    if layer in SOMs: del SOMs[layer]
+                    continue                
+                print("*** progressing with", layer)
                 acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
-                if layer not in SOMs: 
+                if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
                   print("   ** creating", layer)
                   perm = torch.randperm(acts.size(0))
                   samples = acts[perm[-(som_size[0]*som_size[1]):]]
@@ -130,6 +141,7 @@ if __name__ == "__main__":
                                   neighborhood_fct=nb_linear, 
                                   alpha_drate=config["alpha_drate"])
                   SOMevs[layer] = {"change": 0.0, "count": 0}
+                if layer not in SOMs: continue
                 change,count2 = SOMs[layer].add(acts.to(device))
                 SOMevs[layer]["change"] += change
                 SOMevs[layer]["count"] += count2
