@@ -3,6 +3,9 @@ import numpy as np
 import json, sys, pygame, time, torch
 import importlib as imp
 import utils as u
+import matgl
+from matgl.utils.training import ModelLightningModule
+
 
 parser = ArgumentParser(prog="Activation datasets", description="Create subset of high and low activations for cells of a SOM")
 parser.add_argument('configfile')
@@ -100,7 +103,7 @@ with torch.no_grad():
     # store orig activations
     if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
     # for all in loader... 
-    
+
     # for j,v in enumerate(acts[k]):
     #       insert(i, float(v), oacts[j], config["Nacts"])
     # if i%100 == 0: print(".", end="")

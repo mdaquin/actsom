@@ -12,7 +12,7 @@ from matgl.utils.training import ModelLightningModule
 import lightning as pl
 
 
-def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[float]]:
+def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[str], list[float]]:
     if os.path.exists("megnet/data/mp.2018.6.1_structures.pkl"):
         with open("megnet/data/mp.2018.6.1_structures.pkl", "rb") as f:
             structures = pickle.load(f)
@@ -46,7 +46,7 @@ def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[floa
     train_data, val_data, test_data = split_dataset(
         mp_dataset,
         frac_list=[0.1, 0.4, 0.5],
-        shuffle=True,
+        shuffle=shuffle,
         random_state=42,
     )
     train_loader, val_loader, test_loader = MGLDataLoader(
@@ -55,8 +55,7 @@ def load_dataset(ret_mpids=False) -> tuple[list[Structure], list[str], list[floa
         test_data=test_data,
         collate_fn=collate_fn_graph,
         batch_size=256,
-        num_workers=0,
-        shuffle=False
+        num_workers=0
     )
     return train_loader, val_loader, test_loader
 

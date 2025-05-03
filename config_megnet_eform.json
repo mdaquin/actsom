@@ -5,7 +5,7 @@
     "modelcode": "modelpy.load_model()",
     "datasetclass": "megnet/dataset.py",
     "datasetmodulename": "dataset",
-    "datasetcode": "dataset.load_dataset()",
+    "datasetcode": "dataset.load_dataset(shuffle=False)",
     "som_size": [5, 5],
     "aggregation": "mean",
     "batchsize": 26,
