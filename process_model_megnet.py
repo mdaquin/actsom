@@ -62,10 +62,6 @@ if __name__ == "__main__":
                 print(u.activation[layer].shape)
                 # dealing with MegNet weird activation shapes
                 if len(u.activation[layer].shape) < 2: continue
-                if not u.activation[layer].shape[0] == config["batchsize"]:
-                    if u.activation[layer].shape[1] == config["batchsize"]:
-                        u.activation[layer] = u.activation[layer].T
-                    else: continue
                 if config["aggregation"] == "flatten": acts = torch.flatten(u.activation[layer], start_dim=1).to(device)
                 elif config["aggregation"] == "mean":
                     if len(u.activation[layer].shape) > 2:
@@ -82,12 +78,15 @@ if __name__ == "__main__":
                         "max": acts.max(dim=0).values.to(device)
                         }
                 # normalisation based on min/max of first dataset
+                if acts.shape[0] < som_size[0]*som_size[1]: 
+                    print("######### not enought samples", layer)
+                    continue
                 if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
+                    print("################### problem with sizes", layer)
                     #if layer in SOMs: 
                         #print("*** dropping SOM", layer)
                         #del SOMs[layer]
                     continue                
-                print("*** progressing with", layer)
                 acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
                 if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
                   print("   ** creating", layer)
