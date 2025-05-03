@@ -15,6 +15,8 @@ toignore = ["sameAs", "isPrimaryTopicOf", "prefLabel", "wikiPageID", "wikiPageUs
 def filter(p):
     return p in toignore
 
+baduris = ['de.dbpedia.org']
+
 class Cache:
     def __init__(self, path):
         self.path = path
@@ -45,6 +47,8 @@ cache=Cache("entcache")
 
 def getURI(uri, ret=0):
     g = Graph()
+    for s in baduris: 
+        if s in uri: return g
     try:
         g.parse(uri)
         cache.set(uri, g)

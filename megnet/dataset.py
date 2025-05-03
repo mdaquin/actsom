@@ -286,9 +286,9 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
             struct.mpid = mp_ids[i]  
         for i, label in enumerate(eform_per_atom):
             eform_per_atom[i] = float(i)
-        print(len(eform_per_atom))
-        print(len(mp_ids))
-        
+        #print(len(eform_per_atom))
+        #print(len(mp_ids))
+        #fuck = you
     else:
         data = pd.read_json("megnet/data/mp.2018.6.1.json")
         structures = []
