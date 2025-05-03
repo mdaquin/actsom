@@ -37,3 +37,4 @@ nohup.out
 entcache/*
 
 MGLDataset/*
+megnet/data/*
