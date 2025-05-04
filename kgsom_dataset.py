@@ -54,6 +54,7 @@ print("** Loading actsom dataset")
 ds = json.load(open(args.actsom_dataset))
 layer = args.actsom_dataset.split("/")[-1].split(".")[0]
 
+print("****************", len(ds))
 for ci,cell in enumerate(ds):
     hcs = []
     lcs = []

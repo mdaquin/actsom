@@ -77,6 +77,7 @@ def insert(rank, value, tables, n):
     tables["la"] = tables["la"][:n]
  
 result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(som_size[0]*som_size[1])]
+print("**************", len(result))
 oacts = None
 print("Iterating over dataset")
 # this would be more efficient with batching 
@@ -98,7 +99,7 @@ with torch.no_grad():
             sys.exit(-1)
     acts = (acts-som.minval)/(som.maxval-som.minval) # we don't do this for SAE combination...
     # store orig activations
-    if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
+    if oacts is None: oacts = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
     for j,v in enumerate(acts[0]):
           insert(i, float(v), oacts[j], config["Nacts"])
     if i%100 == 0: print(".", end="")
@@ -109,7 +110,7 @@ with torch.no_grad():
 print()
 
 print(oacts)
-with open(acts_dir+"/"+layer+".json", "w") as f:
+with open(actsom_dir+"/"+layer+"_act.json", "w") as f:
     json.dump(oacts, f)
 
 print(result)
