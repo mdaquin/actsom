@@ -6,6 +6,7 @@ import importlib as imp
 import utils as u
 from matgl.utils.training import ModelLightningModule
 import matgl
+import pickle
 
 if __name__ == "__main__":
 
@@ -24,10 +25,8 @@ if __name__ == "__main__":
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
        
-    ### special megnet
     with torch.no_grad():
         model = matgl.load_model("megnet/model")
-        lit_module = ModelLightningModule(model)
 
     print(model)
 
@@ -39,35 +38,41 @@ if __name__ == "__main__":
     exec("import "+config["datasetmodulename"])
     #### special megnet
     loader1, loader2, loader3 = eval(config["datasetcode"])
-   
+
+    # loading datasets
+    with open("megnet/data/mp.2018.6.1_structures.pkl", "rb") as f:
+        structures = pickle.load(f)
+    with open("megnet/data/mp.2018.6.1_mp_ids.pkl", "rb") as f:
+        mp_ids = pickle.load(f)
+    with open("megnet/data/mp.2018.6.1_eform_per_atom.pkl", "rb") as f:
+        eform_per_atom = pickle.load(f)
+
     print("Setting up activation hooks...")
     u.activation = {}
     list_layers = u.set_up_activations(model)
     print(list_layers)
-
-    import lightning as pl
-    trainer = pl.Trainer(accelerator="cpu")
 
     print("Training SOMs")
     SOMs = {}
     mm = {}
     SOMevs = {}
     with torch.no_grad(): # SOM training does not require gradients
-     for ep in range(1, config["nepochs"]+1):
+      for ep in range(1, config["nepochs"]+1):
         count=0
         sev  = 0
-        for loader in [loader1, loader2, loader3]:
+        for i, struct in enumerate(structures):
+            print(i, "*******************************")
             u.activation = {}
-            trainer.validate(lit_module, dataloaders=loader)
-            print("*******************************")
-        
+            pred = model.predict_structure(struct)        
             for layer in u.activation:
+                if type(u.activation[layer]) != tuple and (len(u.activation[layer].shape) == 0): continue
                 print(layer, type(u.activation[layer]), len(u.activation[layer]))
                 if type(u.activation[layer]) == tuple:
                     for el in u.activation[layer]:
                         if type(el) == tuple: print("    - tuple")
                         else: print("    - ", el.shape)
                 else: print('    -', u.activation[layer].shape)
+        if i == 2: break
                 # if layer not in mm:
                 #     mm[layer] = {
                 #         "min": acts.min(dim=0).values.to(device),
@@ -114,10 +119,10 @@ if __name__ == "__main__":
         #             SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
         #         count+=1
         # #print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
-        for layer in SOMevs:
-            SOMevs[layer]["change"] /= count
-            SOMevs[layer]["count"] /= count
-            print(f"  - {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
-            # save SOMs     
-            torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
+        # for layer in SOMevs:
+        #     SOMevs[layer]["change"] /= count
+        #     SOMevs[layer]["count"] /= count
+        #     print(f"  - {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
+        #     # save SOMs     
+        #     torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
     

@@ -15,7 +15,7 @@ toignore = ["sameAs", "isPrimaryTopicOf", "prefLabel", "wikiPageID", "wikiPageUs
 def filter(p):
     return p in toignore
 
-baduris = ['de.dbpedia.org']
+baduris = ['de.dbpedia.org', 'washingtonpost.com']
 
 class Cache:
     def __init__(self, path):

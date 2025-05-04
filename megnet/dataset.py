@@ -326,7 +326,7 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
         val_data=val_data,
         test_data=test_data,
         collate_fn=collate_fn_graph,
-        batch_size=256,
+        batch_size=1,
         num_workers=0
     )
     return train_loader, val_loader, test_loader
