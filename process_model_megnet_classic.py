@@ -52,6 +52,22 @@ if __name__ == "__main__":
     list_layers = u.set_up_activations(model)
     print(list_layers)
 
+    def get_activations_megnet(t):
+        if type(t) == tuple and len(t) > 1: t = t[0] # only the first one for now...
+        if type(t) == tuple and len(t) > 1: t = t[0] # can be a tuple in a tuple
+        if len(t.shape) == 1: return t
+        if len(t.shape) == 2:
+            if t.shape[0] == 1: return t[1]
+            else: return torch.mean(t, dim=1) # could be other aggregation methods
+        if len(t.shape) == 3:
+            if t.shape[0] == 1 and t.shape[1] == 1: return t[2]
+            else: return torch.mean(torch.mean(t, dim=2), dim=1) # randomly, I don't think this happens
+        print("!!!!!!!!!!!!", len(t.shape))
+           
+            #     if 2D, and shape[0] != 1, mean (or sum, or max, or ?)
+            #     if 3D and shape[0] = shape[1] = 1, take dimension 2,
+
+
     print("Training SOMs")
     SOMs = {}
     mm = {}
@@ -65,14 +81,10 @@ if __name__ == "__main__":
             u.activation = {}
             pred = model.predict_structure(struct)        
             for layer in u.activation:
-                if type(u.activation[layer]) != tuple and (len(u.activation[layer].shape) == 0): continue
-                print(layer, type(u.activation[layer]), len(u.activation[layer]))
-                if type(u.activation[layer]) == tuple:
-                    for el in u.activation[layer]:
-                        if type(el) == tuple: print("    - tuple")
-                        else: print("    - ", el.shape)
-                else: print('    -', u.activation[layer].shape)
-        if i == 2: break
+                acts = get_activations_megnet(u.activation[layer])
+                print(layer, "::", acts.shape)
+            # create a batch of batch_size
+            if i == 2: break
                 # if layer not in mm:
                 #     mm[layer] = {
                 #         "min": acts.min(dim=0).values.to(device),
