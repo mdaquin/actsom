@@ -57,16 +57,13 @@ if __name__ == "__main__":
         if type(t) == tuple and len(t) > 1: t = t[0] # can be a tuple in a tuple
         if len(t.shape) == 1: return t
         if len(t.shape) == 2:
-            if t.shape[0] == 1: return t[1]
+            if t.shape[0] == 1: return t[0]
             else: return torch.mean(t, dim=1) # could be other aggregation methods
         if len(t.shape) == 3:
-            if t.shape[0] == 1 and t.shape[1] == 1: return t[2]
+            if t.shape[0] == 1 and t.shape[1] == 1: return t[0][0]
             else: return torch.mean(torch.mean(t, dim=2), dim=1) # randomly, I don't think this happens
         print("!!!!!!!!!!!!", len(t.shape))
-           
-            #     if 2D, and shape[0] != 1, mean (or sum, or max, or ?)
-            #     if 3D and shape[0] = shape[1] = 1, take dimension 2,
-
+        return None
 
     print("Training SOMs")
     SOMs = {}
@@ -82,6 +79,7 @@ if __name__ == "__main__":
             pred = model.predict_structure(struct)        
             for layer in u.activation:
                 acts = get_activations_megnet(u.activation[layer])
+                if acts is None or len(acts) <= 1: continue
                 print(layer, "::", acts.shape)
             # create a batch of batch_size
             if i == 2: break
