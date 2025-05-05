@@ -79,7 +79,7 @@ if __name__ == "__main__":
             pred = model.predict_structure(struct)        
             for layer in u.activation:
                 acts = get_activations_megnet(u.activation[layer])
-                if acts is None or len(acts) <= 1: continue
+                if acts is None or len(acts) <= 1 : continue
                 print(layer, "::", acts.shape)
             # create a batch of batch_size
             if i == 2: break
