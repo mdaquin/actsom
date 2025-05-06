@@ -205,8 +205,8 @@ def MGLDataLoader(
     test_data: dgl.data.utils.Subset = None,
     **kwargs,
 ) -> tuple[GraphDataLoader, ...]:
-    print(train_data[0][0].__dict__)
-    print(train_data[0][0].mpid)
+    #print(train_data[0][0].__dict__)
+    #print(train_data[0][0].mpid)
     train_loader = GraphDataLoader(train_data, shuffle=True, collate_fn=collate_fn, **kwargs)
     val_loader = GraphDataLoader(val_data, shuffle=False, collate_fn=collate_fn, **kwargs)
     if test_data is not None:
@@ -312,8 +312,8 @@ def load_dataset(ret_mpids=False, shuffle=True) -> tuple[list[Structure], list[s
         labels={"Eform": eform_per_atom[:100], "mpids": mp_ids[:100]},
         converter=converter
     )
-    print(mp_dataset[0])
-    print(mp_dataset[0][0].mpid)
+    #print(mp_dataset[0])
+    #print(mp_dataset[0][0].mpid)
     train_data, val_data, test_data = split_dataset(
         mp_dataset,
         frac_list=[0.1, 0.4, 0.5],

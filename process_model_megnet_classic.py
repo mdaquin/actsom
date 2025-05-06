@@ -7,6 +7,7 @@ import utils as u
 from matgl.utils.training import ModelLightningModule
 import matgl
 import pickle
+from random import shuffle
 
 if __name__ == "__main__":
 
@@ -62,8 +63,57 @@ if __name__ == "__main__":
         if len(t.shape) == 3:
             if t.shape[0] == 1 and t.shape[1] == 1: return t[0][0]
             else: return torch.mean(torch.mean(t, dim=2), dim=1) # randomly, I don't think this happens
-        print("!!!!!!!!!!!!", len(t.shape))
+        # print("!!!!!!!!!!!!", len(t.shape))
         return None
+
+    def trainSOM(acts, layer, SOMs, mm, SOMevs):
+        print(".", end="")
+        if layer not in mm:
+                mm[layer] = {
+                        "min": acts.min(dim=0).values.to(device),
+                        "max": acts.max(dim=0).values.to(device)
+                        }
+                # normalisation based on min/max of first dataset
+                if acts.shape[0] < som_size[0]*som_size[1]: 
+                    print("######### not enought samples", layer)
+                    return 
+                if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
+                    print("################### problem with sizes", layer)
+                    #if layer in SOMs: 
+                        #print("*** dropping SOM", layer)
+                        #del SOMs[layer]
+                    return                
+                acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
+                if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
+                  print("   ** creating", layer)
+                  perm = torch.randperm(acts.size(0))
+                  samples = acts[perm[-(som_size[0]*som_size[1]):]]
+                  SOMs[layer] = SOM(som_size[0], 
+                                  som_size[1], 
+                                  acts.shape[1], 
+                                  dist=cosine_distance,
+                                  neighborhood_init=som_size[0]*1.0, 
+                                  neighborhood_drate=0.00001*som_size[0], 
+                                  zero_init=True,
+                                  sample_init=samples,
+                                  minval=mm[layer]["min"], 
+                                  maxval=mm[layer]["max"], 
+                                  device=device, 
+                                  alpha_init=config["alpha"],
+                                  neighborhood_fct=nb_linear, 
+                                  alpha_drate=config["alpha_drate"])
+                  SOMevs[layer] = {"change": 0.0, "count": 0}
+                if layer not in SOMs: 
+                    print("********** layer not in list???")
+                    return
+                change,count2 = SOMs[layer].add(acts.to(device))
+                SOMevs[layer]["change"] += change
+                SOMevs[layer]["count"] += count2
+                # NaNs happen quickly, from first relu layer.
+                # this is a trick... should be investigated why we get NaNs in the SOM
+                if torch.isnan(SOMs[layer].somap).any(): 
+                    print ("*** NaN!")
+                    SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
 
     print("Training SOMs")
     SOMs = {}
@@ -73,66 +123,34 @@ if __name__ == "__main__":
       for ep in range(1, config["nepochs"]+1):
         count=0
         sev  = 0
+        batch = {}
+        shuffle(structures)
         for i, struct in enumerate(structures):
-            print(i, "*******************************")
+            # print(i, "*******************************")
             u.activation = {}
             pred = model.predict_structure(struct)        
             for layer in u.activation:
                 acts = get_activations_megnet(u.activation[layer])
                 if acts is None or len(acts) <= 1 : continue
-                print(layer, "::", acts.shape)
+                # print(layer, "::", acts.shape)
             # create a batch of batch_size
-            if i == 2: break
-                # if layer not in mm:
-                #     mm[layer] = {
-                #         "min": acts.min(dim=0).values.to(device),
-                #         "max": acts.max(dim=0).values.to(device)
-                #         }
-                # normalisation based on min/max of first dataset
-                # if acts.shape[0] < som_size[0]*som_size[1]: 
-                #     print("######### not enought samples", layer)
-                #     continue
-                # if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
-                #     print("################### problem with sizes", layer)
-                #     #if layer in SOMs: 
-                #         #print("*** dropping SOM", layer)
-                #         #del SOMs[layer]
-                #     continue                
-        #         acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
-        #         if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
-        #           print("   ** creating", layer)
-        #           perm = torch.randperm(acts.size(0))
-        #           samples = acts[perm[-(som_size[0]*som_size[1]):]]
-        #           SOMs[layer] = SOM(som_size[0], 
-        #                           som_size[1], 
-        #                           acts.shape[1], 
-        #                           dist=cosine_distance,
-        #                           neighborhood_init=som_size[0]*1.0, 
-        #                           neighborhood_drate=0.00001*som_size[0], 
-        #                           zero_init=True,
-        #                           sample_init=samples,
-        #                           minval=mm[layer]["min"], 
-        #                           maxval=mm[layer]["max"], 
-        #                           device=device, 
-        #                           alpha_init=config["alpha"],
-        #                           neighborhood_fct=nb_linear, 
-        #                           alpha_drate=config["alpha_drate"])
-        #           SOMevs[layer] = {"change": 0.0, "count": 0}
-        #         if layer not in SOMs: continue
-        #         change,count2 = SOMs[layer].add(acts.to(device))
-        #         SOMevs[layer]["change"] += change
-        #         SOMevs[layer]["count"] += count2
-        #         # NaNs happen quickly, from first relu layer.
-        #         # this is a trick... should be investigated why we get NaNs in the SOM
-        #         if torch.isnan(SOMs[layer].somap).any(): 
-        #             print ("*** NaN!")
-        #             SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
-        #         count+=1
-        # #print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
-        # for layer in SOMevs:
-        #     SOMevs[layer]["change"] /= count
-        #     SOMevs[layer]["count"] /= count
-        #     print(f"  - {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
-        #     # save SOMs     
-        #     torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
+                if layer not in batch: batch[layer] = []
+                else: 
+                    if len(batch[layer]) != 0 and len(acts) != len(batch[layer][0]):
+                        # print("Bad layer: ", layer)
+                        batch[layer][0] = []
+                    else: batch[layer].append(acts)
+                if len(batch[layer]) >= config["batchsize"]:
+                    #print("layer batch", layer) 
+                    # print(len(batch[layer]))
+                    trainSOM(torch.stack(batch[layer], dim=0), layer, SOMs, mm, SOMevs)
+                    batch[layer] = []
+        print()        
+        # print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
+        for layer in SOMevs:
+             SOMevs[layer]["change"] /= count
+             SOMevs[layer]["count"] /= count
+             print(f"  - {layer}:: change={SOMevs[layer]['change']}, count={SOMevs[layer]['count']}")
+             # save SOMs     
+             torch.save(SOMs[layer], base_som_dir+"/"+layer+".pt")
     
