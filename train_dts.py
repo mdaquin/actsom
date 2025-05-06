@@ -7,6 +7,7 @@ parser = ArgumentParser(prog="Train DTs on actsom datasets", description="Create
 parser.add_argument('configfile')
 parser.add_argument('maxdepth', type=int)
 parser.add_argument('-o', '--output') # output json file
+parser.add_argument('-s', '--sample', type=int) # output json file
 
 args = parser.parse_args()
 config = json.load(open(args.configfile))
@@ -17,6 +18,8 @@ results = {}
 for f in os.listdir(dsdirs):
     print(f)
     df = pd.read_csv(dsdirs+"/"+f)
+    if "sample" in args:
+        df = df.sample(args.sample)
     # train a decision tree on the data
     X = df.drop(columns=["target"])
     y = df["target"]
