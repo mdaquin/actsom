@@ -139,7 +139,9 @@ if __name__ == "__main__":
                     if len(batch[layer]) != 0 and len(acts) != len(batch[layer][0]):
                         # print("Bad layer: ", layer)
                         batch[layer][0] = []
-                    else: batch[layer].append(acts)
+                    else: 
+                        batch[layer].append(acts)
+                        count += 1
                 if len(batch[layer]) >= config["batchsize"]:
                     #print("layer batch", layer) 
                     # print(len(batch[layer]))
