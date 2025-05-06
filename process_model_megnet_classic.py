@@ -67,28 +67,27 @@ if __name__ == "__main__":
         return None
 
     def trainSOM(acts, layer, SOMs, mm, SOMevs):
-        print(".", end="")
         if layer not in mm:
                 mm[layer] = {
                         "min": acts.min(dim=0).values.to(device),
                         "max": acts.max(dim=0).values.to(device)
                         }
                 # normalisation based on min/max of first dataset
-                if acts.shape[0] < som_size[0]*som_size[1]: 
-                    print("######### not enought samples", layer)
-                    return 
-                if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
-                    print("################### problem with sizes", layer)
+        if acts.shape[0] < som_size[0]*som_size[1]: 
+            print("######### not enought samples", layer)
+            return 
+        if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
+            print("################### problem with sizes", layer)
                     #if layer in SOMs: 
                         #print("*** dropping SOM", layer)
                         #del SOMs[layer]
-                    return                
-                acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
-                if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
-                  print("   ** creating", layer)
-                  perm = torch.randperm(acts.size(0))
-                  samples = acts[perm[-(som_size[0]*som_size[1]):]]
-                  SOMs[layer] = SOM(som_size[0], 
+            return                
+        acts = (acts-mm[layer]["min"])/(mm[layer]["max"]-mm[layer]["min"])
+        if layer not in SOMs and len(acts.shape) == 2: # how can it not be?
+            print("   ** creating", layer)
+            perm = torch.randperm(acts.size(0))
+            samples = acts[perm[-(som_size[0]*som_size[1]):]]
+            SOMs[layer] = SOM(som_size[0], 
                                   som_size[1], 
                                   acts.shape[1], 
                                   dist=cosine_distance,
@@ -102,18 +101,19 @@ if __name__ == "__main__":
                                   alpha_init=config["alpha"],
                                   neighborhood_fct=nb_linear, 
                                   alpha_drate=config["alpha_drate"])
-                  SOMevs[layer] = {"change": 0.0, "count": 0}
-                if layer not in SOMs: 
-                    print("********** layer not in list???")
-                    return
-                change,count2 = SOMs[layer].add(acts.to(device))
-                SOMevs[layer]["change"] += change
-                SOMevs[layer]["count"] += count2
-                # NaNs happen quickly, from first relu layer.
-                # this is a trick... should be investigated why we get NaNs in the SOM
-                if torch.isnan(SOMs[layer].somap).any(): 
-                    print ("*** NaN!")
-                    SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
+            SOMevs[layer] = {"change": 0.0, "count": 0}
+        if layer not in SOMs: 
+            print("********** layer not in list???")
+            return
+        change,count2 = SOMs[layer].add(acts.to(device))
+        print("change, count2", end=" | ")
+        SOMevs[layer]["change"] += change
+        SOMevs[layer]["count"] += count2
+        # NaNs happen quickly, from first relu layer.
+        # this is a trick... should be investigated why we get NaNs in the SOM
+        if torch.isnan(SOMs[layer].somap).any(): 
+            print ("*** NaN!")
+            SOMs[layer].somap = torch.nan_to_num(SOMs[layer].somap, 0.0)   
 
     print("Training SOMs")
     SOMs = {}
@@ -141,12 +141,12 @@ if __name__ == "__main__":
                         batch[layer][0] = []
                     else: 
                         batch[layer].append(acts)
-                        count += 1
                 if len(batch[layer]) >= config["batchsize"]:
                     #print("layer batch", layer) 
                     # print(len(batch[layer]))
                     trainSOM(torch.stack(batch[layer], dim=0), layer, SOMs, mm, SOMevs)
                     batch[layer] = []
+            count += 1
         print()        
         # print(f"{ep}:: Model eval={sev/count}, mem use: {torch.cuda.memory_allocated('cuda:0')/(1014**3):.2f}GB")
         for layer in SOMevs:
