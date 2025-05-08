@@ -18,9 +18,7 @@ with open("megnet/data/mp.2018.6.1_mp_ids.pkl", "rb") as f:
     mp_ids = pickle.load(f)
 
 print("loading kg data")
-kg = Graph()
-kg.parse("/home/mdaquin/code/TCKG/graphs/mpd.ttl") # works only for mda... will fix later...
-kg.parse("/home/mdaquin/code/TCKG/graphs/elements.ttl")
+endpoint = 'http://127.0.0.1:7200/repositories/TCKG'
 
 toignore = ["sameAs", "isPrimaryTopicOf", "prefLabel", "wikiPageID", "wikiPageUsesTemplate", "depiction", "wikiPageWikiLink", "wikiPageLength", "wikiPageRevisionID", "wasDerivedFrom", "wikiPageExternalLink", "label","comment", "type", "image", "thumbnail", "description", "abstract", "name", "givenName", "familyName", "birthDate", "deathDate", "birthPlace", "deathPlace"]
 def filter(p):
@@ -28,12 +26,15 @@ def filter(p):
 
 def getURI(uri, ret=0):
     g = Graph()
+    try:
+        g.parse(endpoint+"?query=describe+<"+uri+">")
+    except:
+        print("!!!!!!! failed on", uri)
     return g
 
 def get_ld_info(idx, nb, isuri=False):
     if not isuri:
-        # get from mpdis
-        uri = 0
+        uri = mp_ids[idx]
     else: uri = idx
     print(uri, end=" ")
     g = getURI(uri)

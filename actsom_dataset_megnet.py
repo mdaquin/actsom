@@ -50,8 +50,8 @@ with open("megnet/data/mp.2018.6.1_structures.pkl", "rb") as f:
         structures = pickle.load(f)
 with open("megnet/data/mp.2018.6.1_mp_ids.pkl", "rb") as f:
         mp_ids = pickle.load(f)
-with open("megnet/data/mp.2018.6.1_eform_per_atom.pkl", "rb") as f:
-        eform_per_atom = pickle.load(f)
+# with open("megnet/data/mp.2018.6.1_eform_per_atom.pkl", "rb") as f:
+#         eform_per_atom = pickle.load(f)
  
 def insert(rank, value, tables, n):
     found=False
@@ -102,6 +102,8 @@ print("Iterating over dataset")
 with torch.no_grad():
   #### special megnet
   for i, struct in enumerate(structures):
+    if "mp-" not in mp_ids[i]: continue
+    # print(mp_ids[i])
     u.activation = {}
     pred = model.predict_structure(struct)   
     acts = get_activations_megnet(u.activation[layer])
