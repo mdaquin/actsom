@@ -110,7 +110,7 @@ with torch.no_grad():
     # print(acts.shape)
     acts = (acts-som.minval)/(som.maxval-som.minval) # we don't do this for SAE combination...
     # store orig activations
-    if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts))]
+    if oacts is None: oacts = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts))]
     # for all in loader... 
     for j,v in enumerate(acts):
            insert(i, float(v), oacts[j], config["Nacts"])

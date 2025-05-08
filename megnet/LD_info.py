@@ -40,7 +40,6 @@ def get_ld_info(idx, nb, isuri=False):
     if not isuri:
         uri = "https://k.loria.fr/ontologies/tckg/data/"+mp_ids[idx]
     else: uri = idx
-    print(uri)
     g = getURI(uri)
     ret = {}
     for _, p, o in g.triples((URIRef(uri), None, None)):

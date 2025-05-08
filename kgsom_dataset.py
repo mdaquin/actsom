@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import json, sys, os
 import importlib.util as imp_util
 import pandas as pd
+import numpy as np
 
 # take a config and a dataset 
 # create the dataset based on LD completion
@@ -26,13 +27,14 @@ class Cache:
             json.dump(value, f)
 
 def dealWithNumerical(df):
-    for col in df.columns:
+    for j, col in enumerate(df.columns):
         for i,v in enumerate(df[col]):
             if type(v) == list and len(v) > 0:
                 if type(v[0]) != str:
-                    print("##", col, i, v)
+                    df.iloc[i,j] = np.array(v).mean()
                 elif v[0].replace('.','',1).isdigit():
-                    print("##.##", col, i, v)
+                    v = np.array(v).apply(lambda x : float(x))
+                    df.iloc[i,j] = v.mean()
     return df
 
 parser = ArgumentParser(prog="view freq", description="visualiser for frequency maps created through ActSOM")
@@ -52,7 +54,8 @@ exec("import "+config["ldinfomodulename"])
 
 print("** Loading actsom dataset")
 ds = json.load(open(args.actsom_dataset))
-layer = args.actsom_dataset.split("/")[-1].split(".")[0]
+layer = args.actsom_dataset.split("/")[-1]
+layer = layer[:layer.rindex(".")]
 
 print("****************", len(ds))
 for ci,cell in enumerate(ds):
