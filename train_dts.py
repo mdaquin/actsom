@@ -24,7 +24,8 @@ for f in os.listdir(dsdirs):
     df = df.loc[(df.drop(columns=["target"])!=0).any(axis=1)]
 
     if "drop" in args and args.drop is not None: 
-        df =df.drop(args.drop, axis=1)
+        for c in args.drop.split(";"):
+            df =df.drop(c, axis=1)
     if "sample" in args and args.sample is not None:
         print(args.sample)
         sys.exit(1)
