@@ -3,17 +3,20 @@ import torch, sys, json
 import importlib as imp
 import utils_f as u
 import SPE.sparce_autoencoder as SAE
+import pickle
+import matgl
+
 
 def get_activations_megnet(t):
         if type(t) == tuple and len(t) > 1: t = t[0] # only the first one for now...
         if type(t) == tuple and len(t) > 1: t = t[0] # can be a tuple in a tuple
-        if len(t.shape) == 1: return t
+        if len(t.shape) == 1: return t.detach()
         if len(t.shape) == 2:
-            if t.shape[0] == 1: return t[0]
+            if t.shape[0] == 1: return t[0].detach()
             else: return torch.mean(t, dim=1) # could be other aggregation methods
         if len(t.shape) == 3:
-            if t.shape[0] == 1 and t.shape[1] == 1: return t[0][0]
-            else: return torch.mean(torch.mean(t, dim=2), dim=1) # randomly, I don't think this happens
+            if t.shape[0] == 1 and t.shape[1] == 1: return t[0][0].detach()
+            else: return torch.mean(torch.mean(t, dim=2), dim=1).detach() # randomly, I don't think this happens
         # print("!!!!!!!!!!!!", len(t.shape))
         return None
 
@@ -33,7 +36,8 @@ def trainSAE(SAEs, optimizers, layer, acts, SAEevs):
                                                 beta=config["beta"], 
                                                 rho=config["rho"]).to(device) 
             SAEev[layer] = {"rec": 0, "sparse": 0, "loss": 0, "min": None}
-            optimizers[layer] = torch.optim.Adam(SAEs[layer].parameters(), lr=config["learningrate"])
+            optimizers[layer] = torch.optim.Adam(SAEs[layer].parameters(), 
+                                                 lr=config["learningrate"])
             SAEs[layer].train()
     if SAEs[layer] is None: return
     optimizers[layer].zero_grad()
@@ -52,13 +56,17 @@ if __name__ == "__main__":
      if len(sys.argv) != 2:
          print("Usage: python process_model.py <config_file.json>")
          sys.exit(1)
-     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-     if device == torch.device("cuda"): print("USING GPU")
- 
+     
      config = json.load(open(sys.argv[1]))
      #config = json.load(open("configurations/config_painters.json"))
      torch.manual_seed(config["seed"])
- 
+     som_size = config["som_size"]
+     base_som_dir = config["somdir"]
+     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+     runcpu = "runcpu" in config and config["runcpu"]
+     if runcpu: device = torch.device("cpu")
+     if device == torch.device("cuda"): print("USING GPU")
+
      print("Loading model...")   
      with torch.no_grad():
         model = matgl.load_model("megnet/model")
@@ -78,7 +86,7 @@ if __name__ == "__main__":
      SAEs = {}
      SAEev = {}
      optimizers = {}
-     for ep in range(1, config["nepochs"]+1):
+     for ep in range(1, config["nepochs_sae"]+1):
          count = 0
          sev = 0
          batch = {}
@@ -103,11 +111,12 @@ if __name__ == "__main__":
                     #print("layer batch", layer) 
                     # print(len(batch[layer]))
                     # trainSOM(torch.stack(batch[layer], dim=0), layer, SOMs, mm, SOMevs)
+                    print(".", end="")
+                    trainSAE(SAEs, optimizers, layer, torch.stack(batch[layer], dim=0), SAEev)
                     batch[layer] = []
-            count += 1
-        print()        
+             count += 1
+         print()        
 
-         
          for layer in SAEev:
              SAEev[layer]["rec"] /= count
              SAEev[layer]["sparse"] /= count

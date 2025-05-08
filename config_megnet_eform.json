@@ -10,6 +10,7 @@
     "aggregation": "mean",
     "batchsize": 256,
     "nepochs": 3, 
+    "nepochs_sae": 3, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,
     "eval": "mae",
@@ -23,5 +24,11 @@
     "DTmodelsdir": "megnet/dtmodels", 
     "actsomPDSdir": "megnet/actsom_datasets",
     "actsPDSdir": "megnet/activation_datasets", 
-    "runcpu": true
+    "runcpu": true, 
+    "basefactor": 3, 
+    "maxsize": 100000000, 
+    "beta": 0.01, 
+    "rho": 0.001, 
+    "learningrate": 0.001, 
+    "saedir": "megnet/saes"
   }
