@@ -14,7 +14,7 @@
     "alpha_drate": 1e-6,
     "eval": "mae",
     "somdir": "megnet/soms", 
-    "Nacts": 40, 
+    "Nacts": 100, 
     "ldcache": "megnet/ldcache", 
     "ldinfoscript": "megnet/LD_info.py",
     "ldinfomodulename": "LD_info",

@@ -5,7 +5,7 @@ import importlib as imp
 import utils as u
 import matgl
 from matgl.utils.training import ModelLightningModule
-
+import pickle
 
 parser = ArgumentParser(prog="Activation datasets", description="Create subset of high and low activations for cells of a SOM")
 parser.add_argument('configfile')
@@ -26,7 +26,6 @@ if device == torch.device("cuda"): print("USING GPU")
 ### special megnet
 with torch.no_grad():
     model = matgl.load_model("megnet/model")
-    lit_module = ModelLightningModule(model)
 
 # load the som
 layer = args.layer
@@ -38,13 +37,21 @@ u.activation = {}
 list_layers = u.set_up_activations(model)
 
 print("Loading dataset...")
-spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
-module = imp.util.module_from_spec(spec)
-sys.modules[config["datasetmodulename"]] = module
-spec.loader.exec_module(module)
-exec("import "+config["datasetmodulename"])
-### special megnet
-loader1, loader2, loader3 = eval(config["datasetcode"])
+# spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
+# module = imp.util.module_from_spec(spec)
+# sys.modules[config["datasetmodulename"]] = module
+# spec.loader.exec_module(module)
+# exec("import "+config["datasetmodulename"])
+# ### special megnet
+# loader1, loader2, loader3 = eval(config["datasetcode"])
+
+# loading datasets
+with open("megnet/data/mp.2018.6.1_structures.pkl", "rb") as f:
+        structures = pickle.load(f)
+with open("megnet/data/mp.2018.6.1_mp_ids.pkl", "rb") as f:
+        mp_ids = pickle.load(f)
+with open("megnet/data/mp.2018.6.1_eform_per_atom.pkl", "rb") as f:
+        eform_per_atom = pickle.load(f)
  
 def insert(rank, value, tables, n):
     found=False
@@ -75,8 +82,18 @@ def insert(rank, value, tables, n):
     tables["la"] = tables["la"][:n]
  
 
-import lightning as pl
-trainer = pl.Trainer(accelerator="cpu")
+def get_activations_megnet(t):
+        if type(t) == tuple and len(t) > 1: t = t[0] # only the first one for now...
+        if type(t) == tuple and len(t) > 1: t = t[0] # can be a tuple in a tuple
+        if len(t.shape) == 1: return t
+        if len(t.shape) == 2:
+            if t.shape[0] == 1: return t[0]
+            else: return torch.mean(t, dim=1) # could be other aggregation methods
+        if len(t.shape) == 3:
+            if t.shape[0] == 1 and t.shape[1] == 1: return t[0][0]
+            else: return torch.mean(torch.mean(t, dim=2), dim=1) # randomly, I don't think this happens
+        # print("!!!!!!!!!!!!", len(t.shape))
+        return None
 
 result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(som_size[0]*som_size[1])]
 oacts = None
@@ -84,39 +101,23 @@ print("Iterating over dataset")
 # this would be more efficient with batching 
 with torch.no_grad():
   #### special megnet
-  for loader in loader1, loader2, loader3:
+  for i, struct in enumerate(structures):
     u.activation = {}
-    #### special megnet
-    trainer.test(lit_module, dataloaders=loader)      
-    acts = u.activation[layer]
-    if type(acts) == tuple: acts = acts[0]
-    if config["aggregation"] == "flatten": 
-            acts = torch.flatten(acts, start_dim=1).to(device)
-    elif config["aggregation"] == "mean":
-                    if len(acts.shape) > 2:
-                        acts = torch.mean(acts, dim=1).to(device)
-                    else: acts = acts.to(device)
-    else: 
-            print("unknown aggregation, check config")
-            sys.exit(-1)
+    pred = model.predict_structure(struct)   
+    acts = get_activations_megnet(u.activation[layer])
+    # print(acts.shape)
     acts = (acts-som.minval)/(som.maxval-som.minval) # we don't do this for SAE combination...
     # store orig activations
-    if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts[0]))]
+    if oacts is None: oacts = result = [{"hc":[], "ha":[], "lc":[], "la": []} for i in range(len(acts))]
     # for all in loader... 
-    count = 0
-    print(acts.shape)
-    for bi, b in enumerate(loader):
-          for k, struct in enumerate(b):
-                # print all attributes of struct
-                count+=1
-    print(count, "/", len(acts))
-    # for j,v in enumerate(acts[k]):
-    #       insert(i, float(v), oacts[j], config["Nacts"])
+    for j,v in enumerate(acts):
+           insert(i, float(v), oacts[j], config["Nacts"])
     # if i%100 == 0: print(".", end="")
-    # res = som(acts)
-    # for j,v in enumerate(res[1]):
-    #       insert(i, float(v), result[j], config["Nacts"])
-    # if i%100 == 0: print(".", end="")
+    acts = torch.unsqueeze(acts, 0).to(device)
+    res = som(acts)
+    for j,v in enumerate(res[1]):
+           insert(i, float(v), result[j], config["Nacts"])
+    if i%100 == 0: print(".", end="")
 print()
 
 print(oacts)

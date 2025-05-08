@@ -31,14 +31,14 @@ if __name__ == "__main__":
 
     print(model)
 
-    print("Loading dataset...")
-    spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
-    module = imp.util.module_from_spec(spec)
-    sys.modules[config["datasetmodulename"]] = module
-    spec.loader.exec_module(module)
-    exec("import "+config["datasetmodulename"])
-    #### special megnet
-    loader1, loader2, loader3 = eval(config["datasetcode"])
+    # print("Loading dataset...")
+    # spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
+    # module = imp.util.module_from_spec(spec)
+    # sys.modules[config["datasetmodulename"]] = module
+    # spec.loader.exec_module(module)
+    # exec("import "+config["datasetmodulename"])
+    # #### special megnet
+    # loader1, loader2, loader3 = eval(config["datasetcode"])
 
     # loading datasets
     with open("megnet/data/mp.2018.6.1_structures.pkl", "rb") as f:
