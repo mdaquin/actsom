@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import sys
 import pandas as pd
 import json, os, pickle
 from sklearn.tree import DecisionTreeClassifier, export_text
@@ -8,6 +9,7 @@ parser.add_argument('configfile')
 parser.add_argument('maxdepth', type=int)
 parser.add_argument('-o', '--output') # output json file
 parser.add_argument('-s', '--sample', type=int) # output json file
+parser.add_argument('-d', '--drop') # output json file
 
 args = parser.parse_args()
 config = json.load(open(args.configfile))
@@ -18,11 +20,19 @@ results = {}
 for f in os.listdir(dsdirs):
     print(f)
     df = pd.read_csv(dsdirs+"/"+f)
-    if "sample" in args:
+    # remove all the lignes with only 0s in df
+    df = df.loc[(df.drop(columns=["target"])!=0).any(axis=1)]
+
+    if "drop" in args and args.drop is not None: 
+        df =df.drop(args.drop, axis=1)
+    if "sample" in args and args.sample is not None:
+        print(args.sample)
+        sys.exit(1)
         df = df.sample(args.sample)
     # train a decision tree on the data
     X = df.drop(columns=["target"])
     y = df["target"]
+    # print(y)
     clf = DecisionTreeClassifier(max_depth=maxdepth)
     clf.fit(X, y)
     accuracy = clf.score(X, y)

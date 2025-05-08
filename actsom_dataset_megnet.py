@@ -123,7 +123,7 @@ with torch.no_grad():
 print()
 
 print(oacts)
-with open(acts_dir+"/"+layer+".json", "w") as f:
+with open(actsom_dir+"/"+layer+"_act.json", "w") as f:
     json.dump(oacts, f)
 
 print(result)
