@@ -3,7 +3,7 @@ import pickle
 import urllib
 from painters.dataset import load_dataset
 from rdflib import Graph, URIRef, Literal
-import time, os
+import time, os, sys
 
 def get_fragment(u):
     if isinstance(u, Literal): return u.value
@@ -18,25 +18,29 @@ with open("megnet/data/mp.2018.6.1_mp_ids.pkl", "rb") as f:
     mp_ids = pickle.load(f)
 
 print("loading kg data")
-endpoint = 'http://127.0.0.1:7200/repositories/TCKG'
+endpoint = 'http://bob:7200/repositories/TCKG'
+baseuri = "https://k.loria.fr/ontologies/tckg/data/"
 
 toignore = ["sameAs", "isPrimaryTopicOf", "prefLabel", "wikiPageID", "wikiPageUsesTemplate", "depiction", "wikiPageWikiLink", "wikiPageLength", "wikiPageRevisionID", "wasDerivedFrom", "wikiPageExternalLink", "label","comment", "type", "image", "thumbnail", "description", "abstract", "name", "givenName", "familyName", "birthDate", "deathDate", "birthPlace", "deathPlace"]
 def filter(p):
     return p in toignore
 
 def getURI(uri, ret=0):
+    print(uri)
     g = Graph()
     try:
         g.parse(endpoint+"?query=describe+<"+uri+">")
-    except:
+    except Exception as e:
         print("!!!!!!! failed on", uri)
+        print(e)
+        sys.exit(1)
     return g
 
 def get_ld_info(idx, nb, isuri=False):
     if not isuri:
-        uri = mp_ids[idx]
+        uri = "https://k.loria.fr/ontologies/tckg/data/"+mp_ids[idx]
     else: uri = idx
-    print(uri, end=" ")
+    print(uri)
     g = getURI(uri)
     ret = {}
     for _, p, o in g.triples((URIRef(uri), None, None)):
