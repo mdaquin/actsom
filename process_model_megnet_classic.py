@@ -133,7 +133,7 @@ if __name__ == "__main__":
                 acts = get_activations_megnet(u.activation[layer])
                 if acts is None or len(acts) <= 1 : continue
                 # print(layer, "::", acts.shape)
-            # create a batch of batch_size
+                # create a batch of batch_size
                 if layer not in batch: batch[layer] = []
                 else: 
                     if len(batch[layer]) != 0 and len(acts) != len(batch[layer][0]):
