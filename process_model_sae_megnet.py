@@ -111,10 +111,11 @@ if __name__ == "__main__":
                     #print("layer batch", layer) 
                     # print(len(batch[layer]))
                     # trainSOM(torch.stack(batch[layer], dim=0), layer, SOMs, mm, SOMevs)
-                    print(".", end="")
+                    # print(".", end="")
                     trainSAE(SAEs, optimizers, layer, torch.stack(batch[layer], dim=0), SAEev)
                     batch[layer] = []
              count += 1
+             if i%100==0: print(".", end="")
          print()        
 
          for layer in SAEev:

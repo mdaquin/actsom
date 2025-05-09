@@ -10,7 +10,7 @@
     "aggregation": "mean",
     "batchsize": 256,
     "nepochs": 3, 
-    "nepochs_sae": 3, 
+    "nepochs_sae": 10, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,
     "eval": "mae",

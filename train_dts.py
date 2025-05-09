@@ -34,7 +34,7 @@ for f in os.listdir(dsdirs):
     X = df.drop(columns=["target"])
     y = df["target"]
     # print(y)
-    clf = DecisionTreeClassifier(max_depth=maxdepth)
+    clf = DecisionTreeClassifier(max_depth=maxdepth, random_state=config["seed"])
     clf.fit(X, y)
     accuracy = clf.score(X, y)
     results[f] = accuracy
