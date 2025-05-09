@@ -23,7 +23,6 @@
     "actsomDSDir": "megnet/actsomds", 
     "DTmodelsdir": "megnet/dtmodels", 
     "actsomPDSdir": "megnet/actsom_datasets",
-    "actsPDSdir": "megnet/activation_datasets", 
     "runcpu": true, 
     "basefactor": 3, 
     "maxsize": 100000000, 

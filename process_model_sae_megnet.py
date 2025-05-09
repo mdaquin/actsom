@@ -94,7 +94,8 @@ if __name__ == "__main__":
          # for X,y in data_loader:
          for i, struct in enumerate(structures):
              u.activation = {}
-             pred = model.predict_structure(struct)        
+             with torch.no_grad():
+                pred = model.predict_structure(struct)        
              for layer in u.activation:
                 acts = get_activations_megnet(u.activation[layer])
                 if acts is None or len(acts) <= 1 : continue
