@@ -10,7 +10,7 @@
     "aggregation": "mean",
     "batchsize": 256,
     "nepochs": 3, 
-    "nepochs_sae": 10, 
+    "nepochs_sae": 25, 
     "alpha": 5e-3, 
     "alpha_drate": 1e-6,
     "eval": "mae",
@@ -28,6 +28,6 @@
     "maxsize": 100000000, 
     "beta": 0.01, 
     "rho": 0.001, 
-    "learningrate": 0.001, 
+    "learningrate": 0.01, 
     "saedir": "megnet/saes"
   }

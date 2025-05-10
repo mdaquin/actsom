@@ -13,16 +13,26 @@ parser.add_argument('-d', '--drop') # output json file
 
 args = parser.parse_args()
 config = json.load(open(args.configfile))
-maxdepth = args.maxdepth
+mmaxdepth = args.maxdepth
 dtmoddir = config["DTmodelsdir"]
 dsdirs = config["actsomDSDir"]
 results = {}
-for f in os.listdir(dsdirs):
-    print(f)
+tosave = []
+for maxdepth in range(1, mmaxdepth+1):
+  for f in os.listdir(dsdirs):
+    layer=f[:f.rindex("_")]
+    number=f[f.rindex("_")+1:f.rindex(".")]
+    method="SOM"
+    if "_act" in layer: 
+        method = "baseline"
+        layer = layer.replace("_act", "")
+    if "_sae" in layer: 
+        method = "SAE"
+        layer = layer.replace("_sae", "")
+    print(f, layer, method, number)    
     df = pd.read_csv(dsdirs+"/"+f)
     # remove all the lignes with only 0s in df
     df = df.loc[(df.drop(columns=["target"])!=0).any(axis=1)]
-
     if "drop" in args and args.drop is not None: 
         for c in args.drop.split(";"):
             df =df.drop(c, axis=1)
@@ -38,12 +48,16 @@ for f in os.listdir(dsdirs):
     clf.fit(X, y)
     accuracy = clf.score(X, y)
     results[f] = accuracy
+    tosave.append({"layer": layer, "method": method, "number": number, "accuracy": accuracy, "maxdepth": maxdepth})
     # display the tree as text
     print("***", f, "::", accuracy)
-    print(export_text(clf, feature_names=X.columns.tolist()))
+    # print(export_text(clf, feature_names=X.columns.tolist()))
     model_path = dtmoddir+"/"+f.replace(".csv", ".model")
     with open(model_path, "wb") as f: pickle.dump(clf, f)
     print("Saved model to", model_path)
 # sort the dict results by its value
 results = dict(sorted(results.items(), key=lambda item: item[1], reverse=True))
 for f in results: print(f,"::", results[f])
+df = pd.DataFrame(tosave)
+df.to_csv("dt_results.csv")
+print(df)

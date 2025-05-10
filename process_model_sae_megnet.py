@@ -48,9 +48,9 @@ def trainSAE(SAEs, optimizers, layer, acts, SAEevs):
     SAEev[layer]["rec"] += recon_loss_val
     SAEev[layer]["sparse"] += sparsity_val
     SAEev[layer]["loss"] += total_loss
-    if SAEev[layer]["min"] is None or total_loss < SAEev[layer]["min"]:
-        SAEev[layer]["min"] = total_loss
-        torch.save(SAEs[layer], f"{config['saedir']}/{layer}.pkl")
+    #if SAEev[layer]["min"] is None or total_loss < SAEev[layer]["min"]:
+    #    SAEev[layer]["min"] = total_loss
+    #    torch.save(SAEs[layer], f"{config['saedir']}/{layer}.pkl")
  
 if __name__ == "__main__":
      if len(sys.argv) != 2:
@@ -120,6 +120,7 @@ if __name__ == "__main__":
          print()        
 
          for layer in SAEev:
+             torch.save(SAEs[layer], f"{config['saedir']}/{layer}.pkl")
              SAEev[layer]["rec"] /= count
              SAEev[layer]["sparse"] /= count
              SAEev[layer]["loss"] /= count
