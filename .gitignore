@@ -9,6 +9,8 @@ pull.sh
 .vscode
 .venv
 
+deprecated/*
+
 */painters/actdata
 */painters/allpainters.json
 */painters/painter_act

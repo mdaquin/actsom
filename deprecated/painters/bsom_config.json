@@ -1,8 +1,0 @@
-{
-    "act_files": ["painters/painter_act"],
-    "som_dim": [15,15],
-    "show": 1,
-    "layers": ["embedding", "lstm", "hidden", "relu"],
-    "aggregations": ["mean", "mean", "", ""],
-    "outdir": "painters/soms/"
-}
