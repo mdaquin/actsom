@@ -48,10 +48,13 @@ for maxdepth in range(1, mmaxdepth+1):
     clf.fit(X, y)
     accuracy = clf.score(X, y)
     results[f] = accuracy
-    tosave.append({"layer": layer, "method": method, "number": number, "accuracy": accuracy, "maxdepth": maxdepth})
     # display the tree as text
     print("***", f, "::", accuracy)
+    prop = "" 
+    if 1 in list(clf.feature_importances_): prop = X.columns[list(clf.feature_importances_).index(1)]
+    print("######", prop)
     # print(export_text(clf, feature_names=X.columns.tolist()))
+    tosave.append({"layer": layer, "method": method, "number": number, "accuracy": accuracy, "maxdepth": maxdepth, "property": prop})
     model_path = dtmoddir+"/"+f.replace(".csv", ".model")
     with open(model_path, "wb") as f: pickle.dump(clf, f)
     print("Saved model to", model_path)
