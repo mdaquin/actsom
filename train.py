@@ -1,78 +1,92 @@
-import math
-import pandas as panda
-import torch, sys, os, json
-from ksom import SOM, cosine_distance, nb_gaussian, nb_linear, nb_ricker
-import importlib as imp
-import utils as u
-
-
-class SpecialDataLoader:
-
-    def __init__(self, data, batch_size=32):
-        self.data = data
-        self.batch_size = batch_size
-    
-    def __len__(self):
-        return math.ceiling(len(self.data)/self.batch_size)
-    
-    def __getitem__(self, idx):
-        return self.data[idx*self.batch_size:(idx+1)*self.batch_size]
+import torch, sys, json
+from ksom import SOM, cosine_distance, euclidean_distance, nb_gaussian, nb_linear, nb_ricker
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
         print("provide configuration file (JSON)")
         sys.exit(1)
-    else: conf = sys.argv[1]
+    conf = sys.argv[1]
 
     # base config
     config = json.load(open(conf))
-    torch.manual_seed(config["seed"])
-    som_size = config["som_size"]
+    if "seed" in config: torch.manual_seed(config["seed"])
+    if "som_size" in config: som_size = config["som_size"]
+    else:
+        print("SOM size required in config")
+        sys.exit(1)
+    if "nepochs" in config: nepochs = config["nepochs"]
+    else:
+        print("nepochs required in config")
+        sys.exit(1)
+    if "batch_size" in config: batch_size = config["batch_size"]
+    else: batch_size = 128
+    if "distance" in config: distance = config["distance"]
+    else: distance = "euclidean"
+    if distance == "euclidean": distance = euclidean_distance
+    elif distance == "cosine": distance = cosine_distance
+    else: 
+        print("unknwon distance", distance)
+        sys.exit(1)
+    if "alpha" in config: alpha=config["alpha"]
+    else: alpha = 5e-3
+    if "alpha_drate" in config: alpha_drate=config["alpha_drate"]
+    else: alpha_drate = 1e-6
+    if "neighb_func" in config: neighb_func = config["neighb_func"]
+    else: neighb_func = "linear"
+    if neighb_func == "linear": neighb_func=nb_linear
+    elif neighb_func == "gaussian": neighb_func=nb_gaussian
+    elif neighb_func == "ricker": neighb_func=nb_ricker
+    else: 
+        print("Unknown neighb_func", neighb_func)
+        sys.exit(1)
+    if "activationfile" in config: 
+        data = torch.load(config["activationfile"])
+        if "activation_field" in config: 
+            if config["activation_field"] in data: activations = data[config["activation_field"]]
+            else:
+                print("activation_field", config["activation_field"], "not found in activation file.")
+                sys.exit(1)
+        else: 
+            print("activation_field required in config")
+    else: 
+        print("activationfile or activationcode required in config (only activationfile implemented)")
+        sys.exit(1)
     base_som_dir = config["somdir"]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     runcpu = "runcpu" in config and config["runcpu"]
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
        
-    with torch.no_grad():
-     print("Loading model...")   
-     # exec(open(config["modelclass"]).read())
-     spec = imp.util.spec_from_file_location(config["modelmodulename"], config["modelclass"])
-     module = imp.util.module_from_spec(spec)
-     sys.modules[config["modelmodulename"]] = module
-     spec.loader.exec_module(module)
-     exec("import "+config["modelmodulename"])
-     if "model" in config: model = u.load_model(config["model"], device=device)
-     else: model = eval(config["modelcode"]) 
-     model.eval()
+    for layer in activations: # make a train_som function and a train 1 epoch function
+        with torch.no_grad(): # basic som training does not require gradient
+            dataloader = DataLoader(activations[layer], batch_size=batch_size, shuffle=True)
+            print()
+            som = None
+            for ep in range(1, nepochs+1):
+                for acts in tqdm(dataloader, f"Training SOM for {layer}"):
+                    if som is None:
+                        print(acts)
+                        sample = acts[:som_size[0]*som_size[1]]
+                        mins = acts.min(dim=0).values.to(device)
+                        maxs = acts.max(dim=0).values.to(device)
+                        som = SOM(som_size[0], som_size[1], len(activations[layer][0]), 
+                                  dist=distance,
+                                  neighborhood_init=som_size[0]*1.0, 
+                                  neighborhood_drate=0.00001*som_size[0], 
+                                  zero_init=True, sample_init=sample,
+                                  minval=mins, maxval=maxs, 
+                                  alpha_init=alpha, alpha_drate=alpha_drate, 
+                                  neighborhood_fct=neighb_func, 
+                                  device=device)
 
-    print("Loading dataset...")
-    spec = imp.util.spec_from_file_location(config["datasetmodulename"], config["datasetclass"])
-    module = imp.util.module_from_spec(spec)
-    sys.modules[config["datasetmodulename"]] = module
-    spec.loader.exec_module(module)
-    exec("import "+config["datasetmodulename"])
-    data = eval(config["datasetcode"])
-    special_dataloader = "specialdataloader" in config and config["specialdataloader"]
-    if not special_dataloader:
-        data_loader = torch.utils.data.DataLoader(data, batch_size=config["batchsize"], shuffle=True)
-    else: 
-        data_loader=SpecialDataLoader(data, batch_size=config["batchsize"])
-
-    print("Setting up activation hooks...")
-    u.activation = {}
-    list_layers = u.set_up_activations(model)
-    print(list_layers)
-
-    print("Training SOMs")
     SOMs = {}
     mm = {}
-    SOMevs = {}
     with torch.no_grad(): # SOM training does not require gradients
-     for ep in range(1, config["nepochs"]+1):
         count=0
-        sev  = 0
+        sev  = 0  
         for X, y in data_loader:
             if not runcpu: X = X.to(device)
             if not runcpu: y = y.to(device)
@@ -110,12 +124,8 @@ if __name__ == "__main__":
                     print("unknown aggregation, check config")
                     sys.exit(-1)
                 if acts.shape[1] < 10: continue
-                # print("acts.shape", acts.shape)
-                if layer not in mm:
-                    mm[layer] = {
-                        "min": acts.min(dim=0).values.to(device),
-                        "max": acts.max(dim=0).values.to(device)
-                        }
+               
+                   
                 # normalisation based on min/max of first dataset
                 if acts.shape[1] != mm[layer]["min"].shape[0] or acts.shape[1] != mm[layer]["max"].shape[0]: 
                     #if layer in SOMs: 
@@ -128,20 +138,9 @@ if __name__ == "__main__":
                   print("   ** creating", layer)
                   perm = torch.randperm(acts.size(0))
                   samples = acts[perm[-(som_size[0]*som_size[1]):]]
-                  SOMs[layer] = SOM(som_size[0], 
-                                  som_size[1], 
-                                  acts.shape[1], 
-                                  dist=cosine_distance,
-                                  neighborhood_init=som_size[0]*1.0, 
-                                  neighborhood_drate=0.00001*som_size[0], 
-                                  zero_init=True,
-                                  sample_init=samples,
-                                  minval=mm[layer]["min"], 
-                                  maxval=mm[layer]["max"], 
-                                  device=device, 
-                                  alpha_init=config["alpha"],
-                                  neighborhood_fct=nb_linear, 
-                                  alpha_drate=config["alpha_drate"])
+
+
+
                   SOMevs[layer] = {"change": 0.0, "count": 0}
                 if layer not in SOMs: continue
                 change,count2 = SOMs[layer].add(acts.to(device))
