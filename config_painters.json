@@ -1,6 +1,6 @@
 {
     "activationfile": "../PainterModel/activations/bert.transformer.layer.2.ffn.pth",
-    "ID_field": "ID",
+    "ID_field": "ids",
     "activation_field": "acts",
     "seed": 42, 
     "som_size": [5,5],
@@ -10,5 +10,6 @@
     "alpha_drate": 1e-6,
     "distance": "cosine",
     "neighb_func": "linear",
-    "somdir": "../PainterModel/soms"
+    "somdir": "../PainterModel/soms", 
+    "somact_dir": "../PainterModel/somactivations/"
   }

@@ -79,7 +79,7 @@ def train_som(dataloader, training_log):
                     display(ffreqmap.view(len(freqmap), 1).repeat((1,3)), xoffset=screen_size)
                     display(som.somap.cpu())
                     # saving som
-                    torch.save(som, f"{somdir}/{layer}_{som_size[0]}x{som_size[1]}.pth")
+            torch.save(som, f"{somdir}/{layer}_{som_size[0]}x{som_size[1]}.pth")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
