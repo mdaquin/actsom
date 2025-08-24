@@ -69,7 +69,7 @@ def train_som(dataloader, training_log):
                                   device=device, return_dist=True)
                     # normalisation
                     acts = ((acts-mins)/(maxs-mins))
-                    change,count, dist = som.add(acts)
+                    change,count,dist = som.add(acts)
                     pbar.set_postfix({'ch': f'{change:.8f}', 'd': f'{dist:.8f}'})
                     training_log.append({"layer": layer, "epoch": ep, "count": count, "change": change, "distance": dist})
                     bmu, dists = som(acts)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
     training_log = []
-    for layer in activations: # make a train_som function and a train 1 epoch function
+    for layer in activations:
          dataloader = DataLoader(activations[layer], batch_size=batch_size, shuffle=True)
          train_som(dataloader, training_log)   
        

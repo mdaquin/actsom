@@ -6,7 +6,6 @@ from tqdm import tqdm
 import pandas as pd
 from matplotlib import pyplot as plt
 
-
 class ActNIdDS:
     def __init__(self, activations, ids):
         self.activations = activations
@@ -70,10 +69,10 @@ if __name__ == "__main__":
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
     som.to(device) # TODO: this should be fixed in ksom
-    for layer in activations: # make a train_som function and a train 1 epoch function
+    for layer in activations: 
          ds = ActNIdDS(activations[layer], IDs)
          dataloader = DataLoader(ds, batch_size=batch_size, shuffle=False)
          sacts, sids = get_acts_som(som, dataloader)
          res = {"acts": sacts, "ids": sids}
-         asomfile = somfile[somfile.rindex('/')+1:] if "/" in somfile else somefile
+         asomfile = somfile[somfile.rindex('/')+1:] if "/" in somfile else somfile
          torch.save(res, somact_dir+"/"+asomfile) 
