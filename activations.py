@@ -29,8 +29,8 @@ def get_acts_som(som, dataloader):
     return sacts, sids
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("provide configuration file (JSON) and a som file (Pickle)")
+    if len(sys.argv) != 4:
+        print("provide configuration file (JSON), a som file (Pickle) and an activation file (Pickle).")
         sys.exit(1)
     conf = sys.argv[1]
     somfile = sys.argv[2]
@@ -41,25 +41,24 @@ if __name__ == "__main__":
     config = json.load(open(conf))
     if "batch_size" in config: batch_size = config["batch_size"]
     else: batch_size = 128
-    if "activationfile" in config: 
-        data = torch.load(config["activationfile"], weights_only=False)
-        if "activation_field" in config: 
-            if config["activation_field"] in data: activations = data[config["activation_field"]]
-            else:
-                print("activation_field", config["activation_field"], "not found in activation file.")
-                sys.exit(1)
-        else: 
-            print("activation_field required in config")
-        if "ID_field" in config: 
-            if config["ID_field"] in data: IDs = data[config["ID_field"]]
-            else: 
-                print("ID_field", config["ID_field"], "not found in activation file.")
-                sys.exit(1)
-        else: 
-            print("ID_field required in config")
+
+    data = torch.load(sys.argv[3], weights_only=False)
+    if "activation_field" in config: 
+        if config["activation_field"] in data: activations = data[config["activation_field"]]
+        else:
+            print("activation_field", config["activation_field"], "not found in activation file.")
+            sys.exit(1)
     else: 
-        print("activationfile or activationcode required in config (only activationfile implemented)")
+        print("activation_field required in config")
         sys.exit(1)
+    if "ID_field" in config: 
+        if config["ID_field"] in data: IDs = data[config["ID_field"]]
+        else: 
+            print("ID_field", config["ID_field"], "not found in activation file.")
+            sys.exit(1)
+    else: 
+        print("ID_field required in config")
+        sys.exit(1)    
     if "somact_dir" in config: somact_dir = config["somact_dir"]
     else: 
         print("somact_dir required in configuration")

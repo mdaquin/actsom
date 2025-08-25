@@ -44,7 +44,6 @@ def display(map, xoffset=0):
     pygame.display.flip()
     pygame.display.update()
 
-
 def train_som(dataloader, training_log):
     with torch.no_grad():
             som = None
@@ -82,8 +81,8 @@ def train_som(dataloader, training_log):
             torch.save(som, f"{somdir}/{layer}_{som_size[0]}x{som_size[1]}.pth")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("provide configuration file (JSON)")
+    if len(sys.argv) != 3:
+        print("provide configuration file (JSON) and activation file")
         sys.exit(1)
     conf = sys.argv[1]
 
@@ -122,17 +121,14 @@ if __name__ == "__main__":
     else: 
         print("Unknown neighb_func", neighb_func)
         sys.exit(1)
-    if "activationfile" in config: 
-        data = torch.load(config["activationfile"], weights_only=False)
-        if "activation_field" in config: 
-            if config["activation_field"] in data: activations = data[config["activation_field"]]
-            else:
-                print("activation_field", config["activation_field"], "not found in activation file.")
-                sys.exit(1)
-        else: 
-            print("activation_field required in config")
+    data = torch.load(sys.argv[2], weights_only=False)    
+    if "activation_field" in config: 
+        if config["activation_field"] in data: activations = data[config["activation_field"]]
+        else:
+            print("activation_field", config["activation_field"], "not found in activation file.")
+            sys.exit(1)
     else: 
-        print("activationfile or activationcode required in config (only activationfile implemented)")
+        print("activation_field required in config")
         sys.exit(1)
     if "somdir" in config: somdir = config["somdir"]
     else: 

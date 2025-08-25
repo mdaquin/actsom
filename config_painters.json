@@ -1,5 +1,4 @@
 {
-    "activationfile": "../PainterModel/activations/bert.transformer.layer.2.ffn.pth",
     "ID_field": "ids",
     "activation_field": "acts",
     "seed": 42, 
