@@ -18,8 +18,8 @@ def get_acts_som(som, dataloader):
     sids = []
     with torch.no_grad():
         pbar = tqdm(dataloader, "Processing")
-        for acts, ids in pbar:     
-            acts = acts.to(device)
+        for acts, ids in pbar:
+            acts = torch.FloatTensor(acts).to(device)
             acts = ((acts-som.minval)/(som.maxval-som.minval))
             bmu, dists = som(acts)
             sacts += dists.T.cpu().tolist()
@@ -30,12 +30,14 @@ def get_acts_som(som, dataloader):
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print("provide configuration file (JSON), a som file (Pickle) and an activation file (Pickle).")
+        print("provide configuration file (JSON), a som file (Pickle), or 'dir' for a directory of som files (from config), and an activation file (Pickle).")
         sys.exit(1)
     conf = sys.argv[1]
     somfile = sys.argv[2]
 
-    som = torch.load(somfile, weights_only=False)
+    # should be able to get a directory instead...
+    if somfile == "dir": som = None
+    else: som = torch.load(somfile, weights_only=False)
 
     # base config
     config = json.load(open(conf))
@@ -63,15 +65,35 @@ if __name__ == "__main__":
     else: 
         print("somact_dir required in configuration")
         sys.exit(1)
+    if "somdir" in config: somdir = config["somdir"]
+    else: 
+        print("somdir required in configuration")
+        sys.exit(1)
+    if "som_size" in config: som_size = config["som_size"]
+    else:
+        print("SOM size required in config")
+        sys.exit(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     runcpu = "runcpu" in config and config["runcpu"]
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
-    som.to(device) # TODO: this should be fixed in ksom
+    if som is not None: som.to(device) # TODO: this should be fixed in ksom 
     for layer in activations: 
+         if som is None:
+             try:
+                 som = torch.load(f"{somdir}/{layer}_{som_size[0]}x{som_size[1]}.pth")
+                 som.to(device)
+             except:
+                 print("No file found (or other problem) for", layer)
+                 continue
          ds = ActNIdDS(activations[layer], IDs)
          dataloader = DataLoader(ds, batch_size=batch_size, shuffle=False)
-         sacts, sids = get_acts_som(som, dataloader)
+         try:
+             sacts, sids = get_acts_som(som, dataloader)
+         except Exception as e:
+             print("oops on layer", layer,":", e)
+             continue
          res = {"acts": sacts, "ids": sids}
-         asomfile = somfile[somfile.rindex('/')+1:] if "/" in somfile else somfile
+         if somfile != "dir": asomfile = somfile[somfile.rindex('/')+1:] if "/" in somfile else somfile
+         else: asomfile = f"{layer}_{som_size[0]}x{som_size[1]}.pth"
          torch.save(res, somact_dir+"/"+asomfile) 

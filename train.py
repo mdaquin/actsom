@@ -52,8 +52,11 @@ def train_som(dataloader, training_log):
                 freqmap = torch.zeros(som_size[0]*som_size[1])
                 pbar = tqdm(dataloader, f"Training SOM for {layer}")
                 for acts in pbar:
-                    acts=acts.to(device)
-                    if som is None:
+                    acts=torch.FloatTensor(acts).to(device)
+                    if len(acts.shape) !=2 or acts.shape[0] == 0 or acts.shape[1] == 0:
+                        print("Bad shape", acts.shape)
+                        return 
+                    if som is None:                        
                         sample = acts[:som_size[0]*som_size[1]]
                         mins = acts.min(dim=0).values.to(device)
                         maxs = acts.max(dim=0).values.to(device)
@@ -138,14 +141,13 @@ if __name__ == "__main__":
     runcpu = "runcpu" in config and config["runcpu"]
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
-    training_log = []
     for layer in activations:
+         training_log = []        
          dataloader = DataLoader(activations[layer], batch_size=batch_size, shuffle=True)
-         train_som(dataloader, training_log)   
-       
-    # saving logs
-    df = pd.DataFrame(training_log)
-    df.to_csv("training_log.csv")
-
-    df[["change", "distance"]].plot()
-    plt.show()
+         train_som(dataloader, training_log)
+         if len(training_log) != 0:
+             # saving logs
+             df = pd.DataFrame(training_log)
+             df.to_csv(layer+"_training_log.csv")
+             #df[["change", "distance"]].plot()
+             #plt.show()

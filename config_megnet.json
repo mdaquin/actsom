@@ -1,0 +1,14 @@
+{
+    "ID_field": "mp_ids",
+    "activation_field": "activations",
+    "seed": 42, 
+    "som_size": [5,5],
+    "batch_size": 128,
+    "nepochs": 1, 
+    "alpha": 5e-3, 
+    "alpha_drate": 1e-6,
+    "distance": "cosine",
+    "neighb_func": "linear",
+    "somdir": "../../data/MEGNET/soms/", 
+    "somact_dir": "../../data/MEGNET/somactivations/"
+  }
