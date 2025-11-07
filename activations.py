@@ -77,8 +77,14 @@ if __name__ == "__main__":
     runcpu = "runcpu" in config and config["runcpu"]
     if runcpu: device = torch.device("cpu")
     if device == torch.device("cuda"): print("USING GPU")
-    if som is not None: som.to(device) # TODO: this should be fixed in ksom 
-    for layer in activations: 
+    if som is not None:
+        som.to(device) # TODO: this should be fixed in ksom 
+        nacts = {}
+        for layer in activations:
+            if layer in somfile : nacts[layer] = activations[layer]
+        activations = nacts
+    for layer in activations:
+         print(layer)
          if som is None:
              try:
                  som = torch.load(f"{somdir}/{layer}_{som_size[0]}x{som_size[1]}.pth")
